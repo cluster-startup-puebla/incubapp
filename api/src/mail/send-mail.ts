@@ -1,19 +1,43 @@
 import nodemailer from 'nodemailer';
-import { requiredEnv } from '../env.js';
 
-export async function sendMail(input: {
+export type MailMessage = {
   to: string;
   subject: string;
   text: string;
-}): Promise<void> {
-  const transporter = nodemailer.createTransport({
-    host: requiredEnv('SMTP_HOST'),
-    port: Number(requiredEnv('SMTP_PORT')),
+  from?: string;
+};
+
+export type MailTransport = {
+  sendMail: (options: {
+    from: string;
+    to: string;
+    subject: string;
+    text: string;
+  }) => Promise<unknown>;
+};
+
+function readSmtpEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing environment variable ${name}`);
+  }
+  return value;
+}
+
+export function createSmtpTransport(): MailTransport {
+  return nodemailer.createTransport({
+    host: readSmtpEnv('SMTP_HOST'),
+    port: Number(readSmtpEnv('SMTP_PORT')),
     secure: false,
   });
+}
 
-  await transporter.sendMail({
-    from: requiredEnv('SMTP_FROM'),
+export async function sendMail(
+  input: MailMessage,
+  transport: MailTransport = createSmtpTransport(),
+): Promise<void> {
+  await transport.sendMail({
+    from: input.from ?? readSmtpEnv('SMTP_FROM'),
     to: input.to,
     subject: input.subject,
     text: input.text,

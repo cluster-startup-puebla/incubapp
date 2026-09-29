@@ -1,12 +1,25 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
+import { resolveTrustedOrigins } from './auth/trusted-origins.js';
+
+/** Nest must keep the global body parser off so Better Auth can read raw bodies. */
+export const NEST_BODY_PARSER_DISABLED = false;
+
+export function resolveCorsOrigins(
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  return resolveTrustedOrigins({
+    CORS_ORIGINS: env.CORS_ORIGINS,
+    WEB_ORIGIN: env.WEB_ORIGIN,
+  });
+}
 
 export function configureApp(app: INestApplication): void {
-  const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+  const corsOrigins = resolveCorsOrigins();
 
   app.enableCors({
-    origin: webOrigin,
+    origin: corsOrigins,
     credentials: true,
   });
   app.setGlobalPrefix('api/v1');

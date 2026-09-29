@@ -1,42 +1,53 @@
 import { betterAuth } from 'better-auth';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { sendMail } from './mail/send-mail.js';
-import { baseClient } from './prisma/prisma.client.js';
+import { Redis } from 'ioredis';
 import { requiredEnv } from './env.js';
+import { MailerService } from './mail/mailer.service.js';
+import { buildAuthOptions } from './auth/auth-options.js';
+import { createRedisSecondaryStorage } from './auth/redis-secondary-storage.js';
+import {
+  AuthRateLimiter,
+  createRedisAuthRateLimitStore,
+} from './auth/auth-rate-limit.js';
 
-export const auth = betterAuth({
-  appName: 'Incubapp',
-  trustedOrigins: [requiredEnv('WEB_ORIGIN')],
-  database: prismaAdapter(baseClient, {
-    provider: 'postgresql',
-  }),
-  user: {
-    additionalFields: {
-      isSuperAdmin: {
-        type: 'boolean',
-        defaultValue: false,
-        input: false,
-      },
+function createSharedRedis(): Redis | undefined {
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    return undefined;
+  }
+  const redis = new Redis(redisUrl, {
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+  });
+  void redis.connect().catch(() => undefined);
+  return redis;
+}
+
+const sharedRedis = createSharedRedis();
+const liveMailer = new MailerService();
+
+export const authRateLimiter = sharedRedis
+  ? new AuthRateLimiter(createRedisAuthRateLimitStore(sharedRedis))
+  : undefined;
+
+export const auth = betterAuth(
+  buildAuthOptions(
+    {
+      BETTER_AUTH_URL: requiredEnv('BETTER_AUTH_URL'),
+      WEB_ORIGIN: process.env.WEB_ORIGIN,
+      CORS_ORIGINS: process.env.CORS_ORIGINS,
     },
-  },
-  emailAndPassword: {
-    enabled: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendMail({
-        to: user.email,
-        subject: 'Reset your password',
-        text: url,
-      });
+    {
+      sendMailFn: (message) => liveMailer.send(message),
+      secondaryStorage: sharedRedis
+        ? createRedisSecondaryStorage(sharedRedis)
+        : undefined,
+      rateLimiter: authRateLimiter,
     },
-  },
-  emailVerification: {
-    sendOnSignUp: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendMail({
-        to: user.email,
-        subject: 'Verify your email',
-        text: url,
-      });
-    },
-  },
-});
+  ),
+);
+
+export {
+  buildAuthOptions,
+  MIN_PASSWORD_LENGTH,
+  SESSION_EXPIRES_IN_SECONDS,
+} from './auth/auth-options.js';

@@ -284,7 +284,7 @@ Comportamiento:
 
 ### T2.1 Config de Better Auth
 
-- [ ] Endurecer `api/src/auth.ts`: password mínima 10, `requireEmailVerification: true`, sesión 7 días, `trustedOrigins` desde `CORS_ORIGINS`, cookies `httpOnly`. `secure` según URL https. Rate limit de Better Auth apunta a Redis cuando T0.4 exista; hasta entonces el spec documenta el storage.
+- [x] Endurecer `api/src/auth.ts`: password mínima 10, `requireEmailVerification: true`, sesión 7 días, `trustedOrigins` desde `CORS_ORIGINS`, cookies `httpOnly`. `secure` según URL https. Rate limit de Better Auth apunta a Redis cuando T0.4 exista; hasta entonces el spec documenta el storage.
 
 **Archivos:** `api/src/auth.ts`, `api/src/auth.config.spec.ts` (inspecciona el objeto de opciones exportado, sin levantar HTTP)
 
@@ -303,7 +303,7 @@ Comportamiento:
 
 ### T2.2 Montaje ya existente
 
-- [ ] No mover el handler. Verificar con tests que el body parser global está apagado y que el módulo reinyecta JSON fuera de auth.
+- [x] No mover el handler. Verificar con tests que el body parser global está apagado y que el módulo reinyecta JSON fuera de auth.
 
 **Tests** (unit del bootstrap, supertest liviano en `configure-app` si hace falta un e2e chico)
 
@@ -318,7 +318,7 @@ Comportamiento:
 
 ### T2.3 Guard global deny by default
 
-- [ ] El `AuthGuard` de `@thallesp/nestjs-better-auth` ya es global. Fijar `@AllowAnonymous()` solo en health, y dejar auth fuera de los controllers Nest. Agregar un spec que lee metadata de cada controller.
+- [x] El `AuthGuard` de `@thallesp/nestjs-better-auth` ya es global. Fijar `@AllowAnonymous()` solo en health, y dejar auth fuera de los controllers Nest. Agregar un spec que lee metadata de cada controller.
 
 **Archivos:** `api/src/auth/public-routes.spec.ts`
 
@@ -336,7 +336,7 @@ Comportamiento:
 
 ### T2.4 Contexto de request
 
-- [ ] `@CurrentUser()` y población de `RequestContext` en interceptor, después del guard.
+- [x] `@CurrentUser()` y población de `RequestContext` en interceptor, después del guard.
 
 **Tests**
 
@@ -350,7 +350,7 @@ Comportamiento:
 
 ### T2.5 Verificación de email y reset
 
-- [ ] `MailerService` con plantilla mínima. Tokens los emite Better Auth. Mailpit en local.
+- [x] `MailerService` con plantilla mínima. Tokens los emite Better Auth. Mailpit en local.
 
 **Archivos:** `api/src/mail/mailer.service.ts`, `mailer.service.spec.ts`. El adapter SMTP es el que ya está en `send-mail.ts`.
 
@@ -368,7 +368,7 @@ Comportamiento:
 
 ### T2.6 Sesiones
 
-- [ ] Listar, revocar una, revocar todas, cambiar password revoca las demás. Endpoints bajo `/api/v1/sessions` (recurso nuestro) que llaman a la API de Better Auth. No reimplementar el almacén de sesiones.
+- [x] Listar, revocar una, revocar todas, cambiar password revoca las demás. Endpoints bajo `/api/v1/sessions` (recurso nuestro) que llaman a la API de Better Auth. No reimplementar el almacén de sesiones.
 
 **Tests** (`sessions.service.spec.ts`)
 
@@ -383,7 +383,7 @@ Comportamiento:
 
 ### T2.7 Rate limit de auth
 
-- [ ] 5 intentos / 15 min por IP + email en login, registro y reset. Respuesta 429 con `Retry-After`. Storage Redis. Mensaje de login idéntico si el email no existe o la password está mal.
+- [x] 5 intentos / 15 min por IP + email en login, registro y reset. Respuesta 429 con `Retry-After`. Storage Redis. Mensaje de login idéntico si el email no existe o la password está mal.
 
 **Tests** (`auth-rate-limit.spec.ts`, reloj fake)
 
