@@ -407,7 +407,7 @@ Comportamiento:
 
 ### T3.1 Membership
 
-- [ ] Modelo `(userId, scopeType, scopeId, role, validFrom, validTo, deletedAt)`. Roles: `cluster_admin`, `coorganizer`, `director`, `staff`, `mentor`, `founder`, `judge`.
+- [x] Modelo `(userId, scopeType, scopeId, role, validFrom, validTo, deletedAt)`. Roles: `cluster_admin`, `coorganizer`, `director`, `staff`, `mentor`, `founder`, `judge`.
 
 **Tests** (`membership.service.spec.ts`)
 
@@ -423,7 +423,7 @@ Comportamiento:
 
 ### T3.2 Tenant del request
 
-- [ ] Header `X-Incubator-Id` opcional. Se valida contra membresías activas. Super admin y `cluster_admin` pueden omitirlo.
+- [x] Header `X-Incubator-Id` opcional. Se valida contra membresías activas. Super admin y `cluster_admin` pueden omitirlo.
 
 **Tests** (`tenant-context.spec.ts`)
 
@@ -440,7 +440,7 @@ Comportamiento:
 
 ### T3.3 Matriz de permisos
 
-- [ ] Un archivo `api/src/authz/permissions.ts`: `role → resource:action`. `@RequirePermissions()` + guard.
+- [x] Un archivo `api/src/authz/permissions.ts`: `role → resource:action`. `@RequirePermissions()` + guard.
 
 **Tests** (`permissions.spec.ts`)
 
@@ -455,7 +455,7 @@ Comportamiento:
 
 ### T3.4 Scoping en la misma extensión
 
-- [ ] Modelos en `TENANT_MODELS` reciben `incubatorId` del contexto en reads y writes. Un `incubatorId` del body se ignora.
+- [x] Modelos en `TENANT_MODELS` reciben `incubatorId` del contexto en reads y writes. Un `incubatorId` del body se ignora.
 
 **Tests**
 
@@ -469,7 +469,7 @@ Comportamiento:
 
 ### T3.5 Suite anti-IDOR
 
-- [ ] Registro `TENANT_RESOURCES`. Un spec parametrizado genera casos GET/PATCH/DELETE de A contra id de B.
+- [x] Registro `TENANT_RESOURCES`. Un spec parametrizado genera casos GET/PATCH/DELETE de A contra id de B.
 
 **Tests**
 

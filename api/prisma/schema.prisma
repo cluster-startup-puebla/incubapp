@@ -11,16 +11,17 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String       @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean      @default(false)
   image         String?
-  isSuperAdmin  Boolean   @default(false) @map("is_super_admin")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isSuperAdmin  Boolean      @default(false) @map("is_super_admin")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   sessions      Session[]
   accounts      Account[]
+  memberships   Membership[]
 
   @@unique([email])
   @@map("user")
@@ -87,8 +88,89 @@ model Institution {
 
   name        String
   countryCode String    @map("country_code") @db.Char(2)
+  incubators  Incubator[]
 
   @@map("institution")
+}
+
+enum MembershipScopeType {
+  incubator
+  cluster
+}
+
+enum MembershipRole {
+  cluster_admin
+  coorganizer
+  director
+  staff
+  mentor
+  founder
+  judge
+}
+
+/// @business
+model Membership {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  userId     String             @map("user_id")
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopeType  MembershipScopeType @map("scope_type")
+  scopeId    String             @map("scope_id") @db.Uuid
+  role       MembershipRole
+  validFrom  DateTime           @map("valid_from")
+  validTo    DateTime?          @map("valid_to")
+
+  @@index([userId])
+  @@index([scopeType, scopeId])
+  @@map("membership")
+}
+
+/// @business — tenant root (no incubatorId column)
+model Incubator {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  name          String
+  slug          String
+  institutionId String?      @map("institution_id") @db.Uuid
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  startups      Startup[]
+
+  @@index([institutionId])
+  @@map("incubator")
+}
+
+/// @business — tenant-scoped child of Incubator
+model Startup {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  name        String
+  incubatorId String    @map("incubator_id") @db.Uuid
+  incubator   Incubator @relation(fields: [incubatorId], references: [id])
+  ownerUserId String?   @map("owner_user_id")
+
+  @@index([incubatorId])
+  @@map("startup")
 }
 
 enum GeoUnitLevel {

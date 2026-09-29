@@ -24,7 +24,7 @@ model Institution {
   @@map("institution")
 }
 `;
-    expect(findSoftDeleteUniques(dirty)).toEqual([
+    expect(findSoftDeleteUniques(dirty, ['Institution'])).toEqual([
       'Institution: has @@unique or @unique (use partial SQL index)',
     ]);
   });

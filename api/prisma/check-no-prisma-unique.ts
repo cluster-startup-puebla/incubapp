@@ -6,7 +6,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const schemaPath = join(__dirname, 'schema.prisma');
 
 /** Soft-delete models that must not use Prisma @@unique (use partial SQL indexes). */
-const SOFT_DELETE_MODELS = ['Institution'];
+const SOFT_DELETE_MODELS = [
+  'Institution',
+  'Membership',
+  'Incubator',
+  'Startup',
+];
 
 function extractModelBlock(schema: string, model: string): string | null {
   const match = schema.match(

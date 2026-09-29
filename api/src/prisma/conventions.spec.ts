@@ -3,7 +3,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Prisma } from '../generated/prisma/client.js';
 
-const BUSINESS_MODELS = ['Institution'] as const;
+const BUSINESS_MODELS = [
+  'Institution',
+  'Membership',
+  'Incubator',
+  'Startup',
+] as const;
 
 const BUSINESS_FIELDS = [
   'id',
@@ -60,6 +65,8 @@ describe('prisma conventions', () => {
     }
 
     expect(Prisma.ModelName.Institution).toBe('Institution');
+    expect(Prisma.ModelName.Membership).toBe('Membership');
+    expect(Prisma.ModelName.Startup).toBe('Startup');
   });
 
   it('auth sin mixin', () => {

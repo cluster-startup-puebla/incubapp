@@ -6,7 +6,22 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T2 cerrado en este checkpoint**. Siguiente: **T3**. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`. T2.8 (2FA) no implementado a propósito.
+Etapa activa: **T3 cerrado en este checkpoint**. Siguiente: **T4.1–T4.6 y T4.14**. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`. T2.8 y T3.6 no implementados a propósito.
+
+## Hecho en T3
+
+| Tarea | Estado | Notas |
+|-------|--------|-------|
+| T3.1 Membership | hecho | Modelo + roles; unicidad parcial `(user_id, scope_type, scope_id, role) WHERE deleted_at IS NULL`; `MembershipService` |
+| T3.2 Tenant del request | hecho | `X-Incubator-Id`; `resolveTenantContext` + interceptor en el mismo ALS; header ajeno no setea ALS |
+| T3.3 Matriz de permisos | hecho | `authz/permissions.ts` único mapa; `@RequirePermissions` + guard; ownership de founder |
+| T3.4 Scoping extensión | hecho | `TENANT_MODELS = [Startup]` en la misma extensión soft-delete/audit; body `incubatorId` ignorado |
+| T3.5 Suite anti-IDOR | hecho | `TENANT_RESOURCES`; GET/PATCH/DELETE cross-tenant → not found; list no mezcla; registry incompleto falla |
+| T3.6 Visibilidad | no | Fuera de este corte |
+
+Migración: `20260929065857_membership_incubator_startup_tenant` (Membership, Incubator, Startup + índices parciales).
+
+Verificación del padre: **122** tests, lint 0 errores. Sesiones no exigen membresía: el 403 de tenant solo aplica con `@RequiresTenant()` (startups). `GET /api/v1/sessions` del admin sigue en 200. Health sigue en 200.
 
 ## Hecho en T2
 
@@ -25,11 +40,11 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T3.1–T3.5. No implementar T3.6 ni T2.8.
+T4.1–T4.6 y T4.14. No implementar T4.7–T4.13 ni T4.15 hasta que un recurso los necesite. No implementar T3.6 ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 
-Quedó sin prueba e2e: Mailpit abierto a mano, tokens de verificación expirados o reusados contra la base, y el 429 del limiter contra Redis (el spec usa reloj falso; el proceso live sí usa Redis).
+Quedó sin prueba e2e HTTP completa de startups (la suite anti-IDOR usa service + Postgres). Sesiones de un user sin membresía ni super admin reciben 403 del tenant resolver.
 
 ## Hecho en T1
 
@@ -61,7 +76,7 @@ T2.8, T3.6 hasta decidir, T6.8, T6.9 hasta decidir, T6.11 completo, T6.13–T6.1
 ## Cómo retomar
 
 1. Leer este archivo.
-2. Leer T3 del plan (o cerrar commit de T2).
+2. Leer T3.6 / T4 del plan (o cerrar commit de T3.1–T3.5).
 3. No correr `nest new`. No mover `/api/auth` ni `GET /api/v1/health`.
 4. No commitear `.env`.
 5. `createdById` sigue siendo `String` (id de Better Auth), no UUID.

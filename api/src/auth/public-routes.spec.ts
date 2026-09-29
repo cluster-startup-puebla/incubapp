@@ -8,6 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard, AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import { HealthController } from '../health/health.controller.js';
 import { SessionsController } from '../sessions/sessions.controller.js';
+import { StartupsController } from '../startups/startups.controller.js';
 
 @AllowAnonymous()
 @Controller('fixture-public')
@@ -39,6 +40,7 @@ const CONTROLLER_INVENTORY: Array<{
 }> = [
   { name: 'HealthController', type: HealthController, anonymous: true },
   { name: 'SessionsController', type: SessionsController, anonymous: false },
+  { name: 'StartupsController', type: StartupsController, anonymous: false },
 ];
 
 function hasAllowAnonymous(

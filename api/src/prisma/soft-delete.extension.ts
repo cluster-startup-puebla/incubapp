@@ -1,7 +1,15 @@
 import { Prisma } from '../generated/prisma/client.js';
-import { currentUserId } from '../context/request-context.js';
+import {
+  currentIncubatorId,
+  currentUserId,
+} from '../context/request-context.js';
 
-export const SOFT_DELETE_MODELS = ['Institution'] as const;
+export const SOFT_DELETE_MODELS = [
+  'Institution',
+  'Membership',
+  'Incubator',
+  'Startup',
+] as const;
 
 export type SoftDeleteModelName = (typeof SOFT_DELETE_MODELS)[number];
 
@@ -9,6 +17,17 @@ const softDeleteModelSet = new Set<string>(SOFT_DELETE_MODELS);
 
 export function isSoftDeleteModel(model: string): model is SoftDeleteModelName {
   return softDeleteModelSet.has(model);
+}
+
+/** Models that receive incubatorId from request context on reads/writes. */
+export const TENANT_MODELS = ['Startup'] as const;
+
+export type TenantModelName = (typeof TENANT_MODELS)[number];
+
+const tenantModelSet = new Set<string>(TENANT_MODELS);
+
+export function isTenantModel(model: string): model is TenantModelName {
+  return tenantModelSet.has(model);
 }
 
 export type SoftDeleteQueryFlags = {
@@ -61,6 +80,42 @@ export function applyListDeletedFilter(
     return activeClause;
   }
   return { AND: [where, activeClause] };
+}
+
+/**
+ * Forces incubatorId from ALS when a tenant is active.
+ * Caller-supplied incubatorId in where/data is overwritten (body ignored).
+ */
+export function applyTenantFilter(
+  model: string,
+  where: WhereInput,
+): WhereInput {
+  if (!isTenantModel(model)) {
+    return where;
+  }
+  const incubatorId = currentIncubatorId();
+  if (incubatorId === null) {
+    return where;
+  }
+  const tenantClause = { incubatorId };
+  if (!where || Object.keys(where).length === 0) {
+    return tenantClause;
+  }
+  return { AND: [where, tenantClause] };
+}
+
+export function forceTenantData<T extends Record<string, unknown>>(
+  model: string,
+  data: T,
+): T {
+  if (!isTenantModel(model)) {
+    return data;
+  }
+  const incubatorId = currentIncubatorId();
+  if (incubatorId === null) {
+    return data;
+  }
+  return { ...data, incubatorId };
 }
 
 export function stripDeletedAtFromData<T extends Record<string, unknown>>(
@@ -121,7 +176,9 @@ export function applyNestedSoftDeleteInclude(
     }
 
     if (value === true) {
-      next[key] = { where: { deletedAt: null } };
+      next[key] = {
+        where: applyTenantFilter(childModel, { deletedAt: null }),
+      };
       continue;
     }
 
@@ -129,7 +186,10 @@ export function applyNestedSoftDeleteInclude(
       const nested = value as Record<string, unknown>;
       next[key] = {
         ...nested,
-        where: applyListDeletedFilter(nested.where as WhereInput, {}),
+        where: applyTenantFilter(
+          childModel,
+          applyListDeletedFilter(nested.where as WhereInput, {}),
+        ),
         ...(nested.include && typeof nested.include === 'object'
           ? {
               include: applyNestedSoftDeleteInclude(
@@ -167,8 +227,16 @@ function getDelegate(client: object, model: string): Delegate {
   return (client as Record<string, Delegate>)[key];
 }
 
+function applySoftDeleteAndTenantWhere(
+  model: string,
+  where: WhereInput,
+  flags: SoftDeleteQueryFlags,
+): WhereInput {
+  return applyTenantFilter(model, applyListDeletedFilter(where, flags));
+}
+
 /**
- * Builds the soft-delete + audit Prisma client extension.
+ * Builds the soft-delete + audit + tenant Prisma client extension.
  * Uses the extended client for delete→update so update filters still apply.
  * Uses the parent client for restore so deleted rows can be revived.
  */
@@ -202,13 +270,23 @@ export function createSoftDeleteExtension() {
       query: {
         $allModels: {
           async findMany({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
+            }
+            if (!isSoftDeleteModel(model)) {
+              return query({
+                ...args,
+                where: applyTenantFilter(model, args.where),
+              });
             }
             const { flags, rest } = extractFlags(args);
             return query({
               ...rest,
-              where: applyListDeletedFilter(rest.where as WhereInput, flags),
+              where: applySoftDeleteAndTenantWhere(
+                model,
+                rest.where as WhereInput,
+                flags,
+              ),
               include: applyNestedSoftDeleteInclude(
                 rest.include as Record<string, unknown> | undefined,
               ),
@@ -216,13 +294,23 @@ export function createSoftDeleteExtension() {
           },
 
           async findFirst({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
+            }
+            if (!isSoftDeleteModel(model)) {
+              return query({
+                ...args,
+                where: applyTenantFilter(model, args.where),
+              });
             }
             const { flags, rest } = extractFlags(args);
             return query({
               ...rest,
-              where: applyListDeletedFilter(rest.where as WhereInput, flags),
+              where: applySoftDeleteAndTenantWhere(
+                model,
+                rest.where as WhereInput,
+                flags,
+              ),
               include: applyNestedSoftDeleteInclude(
                 rest.include as Record<string, unknown> | undefined,
               ),
@@ -230,13 +318,23 @@ export function createSoftDeleteExtension() {
           },
 
           async findFirstOrThrow({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
+            }
+            if (!isSoftDeleteModel(model)) {
+              return query({
+                ...args,
+                where: applyTenantFilter(model, args.where),
+              });
             }
             const { flags, rest } = extractFlags(args);
             return query({
               ...rest,
-              where: applyListDeletedFilter(rest.where as WhereInput, flags),
+              where: applySoftDeleteAndTenantWhere(
+                model,
+                rest.where as WhereInput,
+                flags,
+              ),
               include: applyNestedSoftDeleteInclude(
                 rest.include as Record<string, unknown> | undefined,
               ),
@@ -244,7 +342,7 @@ export function createSoftDeleteExtension() {
           },
 
           async findUnique({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
             }
             void query;
@@ -258,7 +356,7 @@ export function createSoftDeleteExtension() {
           },
 
           async findUniqueOrThrow({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
             }
             void query;
@@ -271,127 +369,186 @@ export function createSoftDeleteExtension() {
           },
 
           async count({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
+            }
+            if (!isSoftDeleteModel(model)) {
+              return query({
+                ...args,
+                where: applyTenantFilter(model, args.where),
+              });
             }
             const { flags, rest } = extractFlags(args);
             return query({
               ...rest,
-              where: applyListDeletedFilter(rest.where as WhereInput, flags),
+              where: applySoftDeleteAndTenantWhere(
+                model,
+                rest.where as WhereInput,
+                flags,
+              ),
             });
           },
 
           async aggregate({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
+            }
+            if (!isSoftDeleteModel(model)) {
+              return query({
+                ...args,
+                where: applyTenantFilter(model, args.where),
+              });
             }
             const { flags, rest } = extractFlags(args);
             return query({
               ...rest,
-              where: applyListDeletedFilter(rest.where as WhereInput, flags),
+              where: applySoftDeleteAndTenantWhere(
+                model,
+                rest.where as WhereInput,
+                flags,
+              ),
             });
           },
 
           async groupBy({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
+            }
+            if (!isSoftDeleteModel(model)) {
+              return query({
+                ...args,
+                where: applyTenantFilter(model, args.where),
+              });
             }
             const { flags, rest } = extractFlags(args);
             return query({
               ...rest,
-              where: applyListDeletedFilter(rest.where as WhereInput, flags),
+              where: applySoftDeleteAndTenantWhere(
+                model,
+                rest.where as WhereInput,
+                flags,
+              ),
             } as typeof args);
           },
 
           async create({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
             }
-            const data = stripDeletedAtFromData({
+            let data = {
               ...(args.data as Record<string, unknown>),
-            });
-            if (data.createdById === undefined) {
-              (data as Record<string, unknown>).createdById = actorId();
+            };
+            if (isSoftDeleteModel(model)) {
+              data = stripDeletedAtFromData(data);
+              if (data.createdById === undefined) {
+                data.createdById = actorId();
+              }
             }
+            data = forceTenantData(model, data);
             return query({ ...args, data } as typeof args);
           },
 
           async createMany({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
             }
             const actor = actorId();
             const raw = args.data as
               Record<string, unknown> | Record<string, unknown>[];
-            const stripped = stripDeletedAtFromCreateManyData(raw);
-            const withActor = Array.isArray(stripped)
-              ? stripped.map((row) => ({
-                  ...row,
-                  createdById:
-                    row.createdById === undefined ? actor : row.createdById,
-                }))
-              : {
-                  ...stripped,
-                  createdById:
-                    stripped.createdById === undefined
-                      ? actor
-                      : stripped.createdById,
-                };
+            const rows = isSoftDeleteModel(model)
+              ? stripDeletedAtFromCreateManyData(raw)
+              : raw;
+            const withActor = Array.isArray(rows)
+              ? rows.map((row) => {
+                  const next = { ...row };
+                  if (
+                    isSoftDeleteModel(model) &&
+                    next.createdById === undefined
+                  ) {
+                    next.createdById = actor;
+                  }
+                  return forceTenantData(model, next);
+                })
+              : (() => {
+                  const next = { ...rows };
+                  if (
+                    isSoftDeleteModel(model) &&
+                    next.createdById === undefined
+                  ) {
+                    next.createdById = actor;
+                  }
+                  return forceTenantData(model, next);
+                })();
             return query({ ...args, data: withActor } as typeof args);
           },
 
           async update({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
             }
-            const data = stripDeletedAtFromData({
+            let data = {
               ...(args.data as Record<string, unknown>),
-            });
-            if (data.updatedById === undefined) {
-              (data as Record<string, unknown>).updatedById = actorId();
+            };
+            if (isSoftDeleteModel(model)) {
+              data = stripDeletedAtFromData(data);
+              if (data.updatedById === undefined) {
+                data.updatedById = actorId();
+              }
             }
+            data = forceTenantData(model, data);
             return query({
               ...args,
-              where: applyListDeletedFilter(args.where, {}),
+              where: applySoftDeleteAndTenantWhere(model, args.where, {}),
               data,
             } as typeof args);
           },
 
           async updateMany({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
             }
-            const data = stripDeletedAtFromData({
+            let data = {
               ...(args.data as Record<string, unknown>),
-            });
-            if (data.updatedById === undefined) {
-              (data as Record<string, unknown>).updatedById = actorId();
+            };
+            if (isSoftDeleteModel(model)) {
+              data = stripDeletedAtFromData(data);
+              if (data.updatedById === undefined) {
+                data.updatedById = actorId();
+              }
             }
+            data = forceTenantData(model, data);
             return query({
               ...args,
-              where: applyListDeletedFilter(args.where, {}),
+              where: applySoftDeleteAndTenantWhere(model, args.where ?? {}, {}),
               data,
             });
           },
 
           async upsert({ model, args, query }) {
-            if (!isSoftDeleteModel(model)) {
+            if (!isSoftDeleteModel(model) && !isTenantModel(model)) {
               return query(args);
             }
 
-            const createData = stripDeletedAtFromData({
+            let createData = {
               ...(args.create as Record<string, unknown>),
-            });
-            if (createData.createdById === undefined) {
-              (createData as Record<string, unknown>).createdById = actorId();
+            };
+            let updateData = {
+              ...(args.update as Record<string, unknown>),
+            };
+
+            if (isSoftDeleteModel(model)) {
+              createData = stripDeletedAtFromData(createData);
+              if (createData.createdById === undefined) {
+                createData.createdById = actorId();
+              }
+              updateData = stripDeletedAtFromData(updateData);
+              if (updateData.updatedById === undefined) {
+                updateData.updatedById = actorId();
+              }
             }
 
-            const updateData = stripDeletedAtFromData({
-              ...(args.update as Record<string, unknown>),
-            });
-            if (updateData.updatedById === undefined) {
-              (updateData as Record<string, unknown>).updatedById = actorId();
-            }
+            createData = forceTenantData(model, createData);
+            updateData = forceTenantData(model, updateData);
 
             return query({
               ...args,
@@ -438,7 +595,7 @@ export function createSoftDeleteExtension() {
             }
             void query;
             return getDelegate(client, model).updateMany({
-              where: applyListDeletedFilter(args.where ?? {}, {}),
+              where: applySoftDeleteAndTenantWhere(model, args.where ?? {}, {}),
               data: {
                 deletedAt: new Date(),
                 deletedById: actorId(),
