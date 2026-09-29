@@ -252,6 +252,7 @@ model Startup {
   incubator   Incubator         @relation(fields: [incubatorId], references: [id])
   ownerUserId String?           @map("owner_user_id")
   snapshots   StartupSnapshot[]
+  metricReadings MetricReading[]
 
   @@index([incubatorId])
   @@index([domain])
@@ -391,8 +392,36 @@ model MetricDef {
   key           String
   name          String
   allowNegative Boolean   @default(false) @map("allow_negative")
+  readings      MetricReading[]
 
   // Active uniqueness: (framework_id, key) WHERE deleted_at IS NULL — SQL migration
   @@index([frameworkId])
   @@map("metric_def")
+}
+
+/// @business — period value for a startup metric (upsert by startup+metric+period)
+model MetricReading {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  startupId    String    @map("startup_id") @db.Uuid
+  startup      Startup   @relation(fields: [startupId], references: [id])
+  metricDefId  String    @map("metric_def_id") @db.Uuid
+  metricDef    MetricDef @relation(fields: [metricDefId], references: [id])
+  period       DateTime  @db.Date
+  value        Float
+  verifiedAt   DateTime? @map("verified_at")
+  verifiedById String?   @map("verified_by_id")
+
+  // Active uniqueness: (startup_id, metric_def_id, period) WHERE deleted_at IS NULL — SQL migration
+  @@index([startupId])
+  @@index([metricDefId])
+  @@index([startupId, period])
+  @@map("metric_reading")
 }

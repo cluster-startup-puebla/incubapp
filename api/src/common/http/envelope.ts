@@ -1,7 +1,7 @@
 export const ENVELOPE_KIND = Symbol('incubapp.envelope');
 
 export type ListMeta = {
-  page: number;
+  page?: number;
   pageSize: number;
   total?: number;
   nextCursor?: string | null;

@@ -15,6 +15,7 @@ export const SOFT_DELETE_MODELS = [
   'Milestone',
   'MetricDef',
   'Incubation',
+  'MetricReading',
 ] as const;
 
 export type SoftDeleteModelName = (typeof SOFT_DELETE_MODELS)[number];

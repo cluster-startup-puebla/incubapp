@@ -22,6 +22,8 @@ import { IncubationsController } from '../src/incubations/incubations.controller
 import { IncubationsService } from '../src/incubations/incubations.service.js';
 import { MembershipsController } from '../src/membership/memberships.controller.js';
 import { MembershipsHttpService } from '../src/membership/memberships-http.service.js';
+import { MetricReadingsController } from '../src/metric-readings/metric-readings.controller.js';
+import { MetricReadingsService } from '../src/metric-readings/metric-readings.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
 import { SessionsService } from '../src/sessions/sessions.service.js';
 import { StartupsController } from '../src/startups/startups.controller.js';
@@ -30,6 +32,9 @@ import { UsersController } from '../src/users/users.controller.js';
 import { UsersService } from '../src/users/users.service.js';
 import { AuditLogInterceptor } from '../src/audit/audit-log.interceptor.js';
 import { AuditLogService } from '../src/audit/audit-log.service.js';
+import { IdempotencyGuard } from '../src/idempotency/idempotency.guard.js';
+import { IdempotencyInterceptor } from '../src/idempotency/idempotency.interceptor.js';
+import type { CallHandler, ExecutionContext } from '@nestjs/common';
 
 @Module({
   controllers: [
@@ -38,6 +43,7 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
     StartupsController,
     InstitutionsController,
     IncubationsController,
+    MetricReadingsController,
     GeoUnitsController,
     IncubatorsController,
     FrameworksController,
@@ -107,6 +113,15 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
         remove: async () => ({}),
         restore: async () => ({}),
         purge: async () => undefined,
+      },
+    },
+    {
+      provide: MetricReadingsService,
+      useValue: {
+        list: async () => ({ items: [], pageSize: 20 }),
+        get: async () => ({}),
+        upsert: async () => ({ row: {}, created: true }),
+        verify: async () => ({}),
       },
     },
     {
@@ -185,7 +200,15 @@ class OpenApiCheckModule {}
 async function main(): Promise<void> {
   const moduleRef = await Test.createTestingModule({
     imports: [OpenApiCheckModule],
-  }).compile();
+  })
+    .overrideGuard(IdempotencyGuard)
+    .useValue({ canActivate: () => true })
+    .overrideInterceptor(IdempotencyInterceptor)
+    .useValue({
+      intercept: (_context: ExecutionContext, next: CallHandler) =>
+        next.handle(),
+    })
+    .compile();
 
   const app = moduleRef.createNestApplication();
   app.setGlobalPrefix('api/v1');

@@ -6,7 +6,28 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.12 lecturas de métricas en curso**. Checkpoint incubations: pendiente de este commit. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.17 notificaciones en curso**. Checkpoint metric-readings: pendiente de este commit. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.12 (`metric-readings` upsert)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Upsert | hecho | `PUT /startups/:startupId/metrics` por (startup, metricDef, period) → una fila, valor nuevo |
+| Idempotencia | hecho | `@RequireIdempotency()` + guard/interceptor existentes; misma key → un write |
+| Negativo | hecho | `allowNegative: false` + value < 0 → 400 |
+| Periodo futuro | hecho | period > hoy (UTC YYYY-MM-DD) → 400 |
+| Verificada | hecho | edit tras `verifiedAt` limpia `verifiedAt` / `verifiedById` |
+| Founder verifica | hecho | `POST .../verify` con rol founder → 403; staff/director ok |
+| Cursor | hecho | list sin `total`; `nextCursor` vía `toCursorPage` |
+| Receta | hecho | Zod `.strict()`, envelope, AuditModule + interceptor, fechas `YYYY-MM-DD` |
+| Soft delete / uniques | hecho | MetricReading en `SOFT_DELETE_MODELS`; sin `@@unique`; unique parcial startup×metric×period |
+| OpenAPI | hecho | controller en `openapi-check.ts` y `public-routes.spec.ts` |
+
+Migración: `20260929085121_metric_reading_upsert` (`metric_reading` + índice parcial activo).
+
+Verificación del padre: **439** tests, lint 0 errores, `openapi:check` (50 paths) y `db:check-uniques` ok. En vivo: primer PUT **201** valor 10, la misma `Idempotency-Key` repite el mismo id, un segundo upsert deja **una** fila con valor 25, negativo **400**, periodo futuro **400**, el listado no trae `total`. `page` del envelope quedó opcional para el cursor.
+
+Gaps aceptados: sin trash/restore/purge HTTP de lecturas, sin recurso RBAC `metric-reading` (usa `startup:read`/`startup:update`), sin T6.8 pivots, sin T6.11/T6.13+, sin resto de T3.6, sin T2.8.
 
 ## Hecho en T6.10 (`incubations` lifecycle)
 
@@ -219,7 +240,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.12 lecturas de métricas (upsert). No implementar T6.8 pivots, T6.11/T6.13+, T3.6 completo ni T2.8.
+T6.11 milestone progress o T6.13+ (mentorías / competencias). No implementar T6.8 pivots, T6.17, T7, T3.6 completo ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 
