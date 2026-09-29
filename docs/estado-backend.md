@@ -6,7 +6,34 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.5 frameworks cerrado en este checkpoint**. Siguiente: T6.6 startups. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.6 startups en curso** (alta en vivo 409 por llave foránea, sin commit). En paralelo ya quedaron T4.10, T4.13 y T4.15. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.6 (`startups` mínimo POC)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Alta + snapshot vigente | hecho | create en transacción escribe `startup_snapshot` con `validTo` null |
+| Dominio parecido | hecho | mismo `domain` → 409 + `candidates` en problem+json; no es unique index |
+| Force admin / founder | hecho | `?force=true` solo super admin → 201; no-admin → 403 y no crea |
+| Founder ownership | hecho | edita la suya → 200; ajena (mismo tenant) → **404**; `ownerUserId` del actor al create |
+| Visibilidad private | hecho | default `INCUBATOR`; `PRIVATE` otro tenant → 404 get / ausente en list (filtro en query) |
+| Receta institutions | hecho | Zod `.strict()`, envelope, If-Match, AuditModule + interceptor, trash/restore/purge |
+| Soft delete / uniques | hecho | Startup ya en `SOFT_DELETE_MODELS`; sin `@@unique`; unique parcial name×incubator intacta |
+| OpenAPI | hecho | controller en `openapi-check.ts` y `public-routes.spec.ts` |
+
+Migración: `20260929081701_startup_domain_visibility_snapshot` (`domain`, `visibility`, `startup_snapshot`).
+
+El subagente reportó **363** tests, lint 0 errores, `openapi:check` (41 paths) y `db:check-uniques` ok. El padre todavía no cierra el checkpoint: `POST /api/v1/startups` en vivo respondió **409** `P2003`.
+
+## Hecho en paralelo (`T4.10` / `T4.13` / `T4.15`)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Logs | hecho | `RequestLoggingInterceptor` global; redacta password, token, authorization y cookie |
+| Idempotencia | hecho | store Redis TTL 24 h, key con user id; opt-in `@RequireIdempotency()` |
+| Object storage | hecho | `ObjectStorage` put / signedGet / delete sobre MinIO; bucket desde config |
+
+Gaps aceptados: sin T6.7 (cerrar/abrir snapshot al rename, overlap, PATCH cerrado, rollback). Sin resto de T3.6 (cluster ve public, audit diff de visibility). Sin T6.8+ / T6.10 / T2.8.
 
 ## Hecho en T6.5 (`frameworks` / stages / milestones / metric-defs)
 
@@ -152,7 +179,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.6 `startups` (mínimo POC). No implementar T3.6 ni T2.8.
+T6.7 snapshots lifecycle (cerrar/abrir al rename, overlap, PATCH cerrado, rollback). No implementar T3.6 completo ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 

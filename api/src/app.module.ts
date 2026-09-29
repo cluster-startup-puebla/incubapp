@@ -19,6 +19,8 @@ import { IncubatorsModule } from './incubators/incubators.module.js';
 import { InstitutionsModule } from './institutions/institutions.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { MembershipModule } from './membership/membership.module.js';
+import { IdempotencyModule } from './idempotency/idempotency.module.js';
+import { RequestLoggingInterceptor } from './logging/request-log.js';
 import { MinioModule } from './storage/minio.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
@@ -39,6 +41,7 @@ import { UsersModule } from './users/users.module.js';
     AuthzModule,
     AuditModule,
     WriteRateLimitModule,
+    IdempotencyModule,
     AuthModule.forRoot({
       auth,
       disableTrustedOriginsCors: true,
@@ -72,6 +75,10 @@ import { UsersModule } from './users/users.module.js';
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestContextInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestLoggingInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,
