@@ -1,24 +1,45 @@
+'use client';
+
+import { Suspense, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { authClient } from '@/lib/auth-client';
 import { GeoList } from './geo-list';
 
-type GeoPageProps = {
-  searchParams: Promise<{ parentId?: string }>;
+type SessionUser = {
+  role?: string;
+  roles?: string[];
+  isSuperAdmin?: boolean;
 };
 
-export default async function GeoPage({ searchParams }: GeoPageProps) {
-  const { parentId } = await searchParams;
+function isSuperAdmin(user: SessionUser | undefined): boolean {
+  if (!user) {
+    return false;
+  }
+  if (user.isSuperAdmin) {
+    return true;
+  }
+  const roles = user.roles?.length ? user.roles : user.role ? [user.role] : [];
+  return roles.includes('superadmin');
+}
 
+function GeoPageInner() {
+  const searchParams = useSearchParams();
+  const parentId = searchParams.get('parentId');
+  const { data: session } = authClient.useSession();
+  const canCreate = useMemo(
+    () => isSuperAdmin(session?.user as SessionUser | undefined),
+    [session],
+  );
+
+  return <GeoList parentId={parentId} canCreate={canCreate} />;
+}
+
+export default function GeoPage() {
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        El shell puede pasar canCreate más adelante.
-      </p>
-      {parentId ? (
-        <GeoList parentId={parentId} canCreate={false} />
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Indica parentId en la URL para listar los hijos de una unidad.
-        </p>
-      )}
-    </div>
+    <Suspense
+      fallback={<p className="text-sm text-muted-foreground">Cargando…</p>}
+    >
+      <GeoPageInner />
+    </Suspense>
   );
 }

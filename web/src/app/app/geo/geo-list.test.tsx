@@ -61,6 +61,30 @@ describe('GeoList', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('lists countries when there is no parent', async () => {
+    apiClient.mockResolvedValue({
+      data: [
+        {
+          id: countryId,
+          name: 'México',
+          code: 'MX',
+          level: 'COUNTRY',
+          parentId: null,
+        },
+      ],
+      meta: { page: 1, pageSize: 10, total: 1 },
+    });
+
+    render(<GeoList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('México')).toBeInTheDocument();
+    });
+    expect(apiClient).toHaveBeenCalledWith(
+      '/api/v1/geo-units?page=1&filter%5Blevel%5D%5Beq%5D=COUNTRY',
+    );
+  });
+
   it('surfaces 422 ProblemError detail when municipality parent is a country', async () => {
     apiClient.mockResolvedValueOnce(pageResult);
     apiClient.mockRejectedValueOnce(
