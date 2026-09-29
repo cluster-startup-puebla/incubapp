@@ -203,12 +203,25 @@ model Incubator {
   @@map("incubator")
 }
 
-/// Minimal incubation row for delete-guard (full cohort API is T6.10).
+/// Cohort / incubation lifecycle (applied → active → graduated | dropped).
+/// Single active row per incubator: partial unique WHERE status = 'active'
+/// AND deleted_at IS NULL — SQL migration (no Prisma @@unique).
 model Incubation {
   id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
   incubatorId String    @map("incubator_id") @db.Uuid
   incubator   Incubator @relation(fields: [incubatorId], references: [id])
-  status      String
+  status      String    @default("applied")
+  startedOn   DateTime? @map("started_on") @db.Date
+  endedOn     DateTime? @map("ended_on") @db.Date
+  exitReason  String?   @map("exit_reason")
 
   @@index([incubatorId, status])
   @@map("incubation")

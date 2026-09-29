@@ -19,6 +19,7 @@ export const RESOURCES = [
   'startup',
   'institution',
   'incubator',
+  'incubation',
   'membership',
   'user',
   'geo-unit',
@@ -151,6 +152,37 @@ const INCUBATOR_READ_ONLY = {
   'incubator:purge': false,
 } as const;
 
+/** Incubation lifecycle writers (scope enforced in service, not TENANT_MODELS). */
+const INCUBATION_MANAGER = {
+  'incubation:list': true,
+  'incubation:read': true,
+  'incubation:create': true,
+  'incubation:update': true,
+  'incubation:delete': true,
+  'incubation:restore': true,
+  'incubation:purge': false,
+} as const;
+
+const INCUBATION_STAFF = {
+  'incubation:list': true,
+  'incubation:read': true,
+  'incubation:create': true,
+  'incubation:update': true,
+  'incubation:delete': false,
+  'incubation:restore': false,
+  'incubation:purge': false,
+} as const;
+
+const INCUBATION_READ_ONLY = {
+  'incubation:list': true,
+  'incubation:read': true,
+  'incubation:create': false,
+  'incubation:update': false,
+  'incubation:delete': false,
+  'incubation:restore': false,
+  'incubation:purge': false,
+} as const;
+
 /** Explicit allow (true) / deny (false) for every role × permission cell. */
 export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
   cluster_admin: {
@@ -169,6 +201,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:restore': true,
     'institution:purge': false,
     ...INCUBATOR_CLUSTER_ADMIN,
+    ...INCUBATION_MANAGER,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
@@ -196,6 +229,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:restore': false,
     'institution:purge': false,
     ...INCUBATOR_COORGANIZER,
+    ...INCUBATION_MANAGER,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
@@ -223,6 +257,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:restore': false,
     'institution:purge': false,
     ...INCUBATOR_DIRECTOR,
+    ...INCUBATION_MANAGER,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
@@ -250,6 +285,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:restore': false,
     'institution:purge': false,
     ...INCUBATOR_STAFF,
+    ...INCUBATION_STAFF,
     'membership:list': true,
     'membership:read': true,
     'membership:create': false,
@@ -277,6 +313,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:restore': false,
     'institution:purge': false,
     ...INCUBATOR_READ_ONLY,
+    ...INCUBATION_READ_ONLY,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
@@ -304,6 +341,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:restore': false,
     'institution:purge': false,
     ...INCUBATOR_READ_ONLY,
+    ...INCUBATION_READ_ONLY,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
@@ -331,6 +369,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:restore': false,
     'institution:purge': false,
     ...INCUBATOR_READ_ONLY,
+    ...INCUBATION_READ_ONLY,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,

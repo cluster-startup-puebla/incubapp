@@ -6,7 +6,28 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.10 incubaciones en curso**. Checkpoint snapshots: pendiente de este commit. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.12 lecturas de métricas en curso**. Checkpoint incubations: pendiente de este commit. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.10 (`incubations` lifecycle)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Transición válida | hecho | `applied → active` → 200 |
+| Transición inválida | hecho | `graduated → active` → 409 |
+| Una activa | hecho | segunda `active` en la misma incubadora → 409 (índice parcial) |
+| Fechas | hecho | `endedOn` < `startedOn` → 400 (Zod + service) |
+| Exit reason | hecho | a `dropped` sin motivo → 422 |
+| Matriz | hecho | recurso `incubation` en `permissions.ts` + `matriz completa` |
+| Receta | hecho | Zod `.strict()`, envelope, If-Match, AuditModule + interceptor, trash/restore/purge |
+| Soft delete / uniques | hecho | Incubation en `SOFT_DELETE_MODELS`; sin `@@unique`; unique parcial active×incubator |
+| OpenAPI | hecho | controller en `openapi-check.ts` y `public-routes.spec.ts` |
+| Delete guard incubadora | hecho | delete con incubación `active` sigue → 409 |
+
+Migración: `20260929084044_incubation_lifecycle_soft_delete` (audit/soft-delete + fechas + `exit_reason` + índice parcial active).
+
+Verificación del padre: **415** tests, lint 0 errores, `openapi:check` (47 paths) y `db:check-uniques` ok. En vivo: `applied → active` 200, segunda active 409, `dropped` sin motivo 422, fechas invertidas 400, `graduated → active` 409. Las fechas van como `YYYY-MM-DD` para que OpenAPI pueda arrancar.
+
+Gaps aceptados: sin T6.8 pivots, sin T6.11/T6.12/T6.13+, sin resto de T3.6, sin T2.8. Incubation **no** está en `TENANT_MODELS` (scope manual como incubators).
 
 ## Hecho en T6.7 (`startup snapshots` lifecycle)
 
@@ -198,7 +219,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.10 incubaciones (transiciones, una activa, fechas, exit reason). No implementar T6.8 pivots, T6.12, T3.6 completo ni T2.8.
+T6.12 lecturas de métricas (upsert). No implementar T6.8 pivots, T6.11/T6.13+, T3.6 completo ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 

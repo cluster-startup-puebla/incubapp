@@ -18,6 +18,8 @@ import { IncubatorsController } from '../src/incubators/incubators.controller.js
 import { IncubatorsService } from '../src/incubators/incubators.service.js';
 import { InstitutionsController } from '../src/institutions/institutions.controller.js';
 import { InstitutionsService } from '../src/institutions/institutions.service.js';
+import { IncubationsController } from '../src/incubations/incubations.controller.js';
+import { IncubationsService } from '../src/incubations/incubations.service.js';
 import { MembershipsController } from '../src/membership/memberships.controller.js';
 import { MembershipsHttpService } from '../src/membership/memberships-http.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
@@ -35,6 +37,7 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
     SessionsController,
     StartupsController,
     InstitutionsController,
+    IncubationsController,
     GeoUnitsController,
     IncubatorsController,
     FrameworksController,
@@ -80,6 +83,20 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
     },
     {
       provide: InstitutionsService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        listDeleted: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
+        getWithDeleted: async () => ({}),
+        create: async () => ({}),
+        update: async () => ({}),
+        remove: async () => ({}),
+        restore: async () => ({}),
+        purge: async () => undefined,
+      },
+    },
+    {
+      provide: IncubationsService,
       useValue: {
         list: async () => ({ items: [], total: 0 }),
         listDeleted: async () => ({ items: [], total: 0 }),

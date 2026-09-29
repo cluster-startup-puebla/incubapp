@@ -17,6 +17,7 @@ import { FrameworksModule } from './frameworks/frameworks.module.js';
 import { GeoUnitsModule } from './geo-units/geo-units.module.js';
 import { IncubatorsModule } from './incubators/incubators.module.js';
 import { InstitutionsModule } from './institutions/institutions.module.js';
+import { IncubationsModule } from './incubations/incubations.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { MembershipModule } from './membership/membership.module.js';
 import { IdempotencyModule } from './idempotency/idempotency.module.js';
@@ -50,6 +51,7 @@ import { UsersModule } from './users/users.module.js';
     SessionsModule,
     StartupsModule,
     InstitutionsModule,
+    IncubationsModule,
     IncubatorsModule,
     FrameworksModule,
     GeoUnitsModule,

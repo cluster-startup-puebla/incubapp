@@ -57,6 +57,16 @@ export const GLOBAL_RESOURCES = [
     /** Without permission → 403; frameworks are global (no incubator scoping). */
     idor: 'permission' as const,
   },
+  {
+    model: 'Incubation' as const,
+    basePath: '/api/v1/incubations',
+    methods: ['GET', 'PATCH', 'DELETE'] as const,
+    /**
+     * Not in TENANT_MODELS. Cross-scope access enforced in IncubationsService
+     * via ALS incubatorId → 404.
+     */
+    idor: 'scope' as const,
+  },
 ] as const;
 
 export type TenantResource = (typeof TENANT_RESOURCES)[number];

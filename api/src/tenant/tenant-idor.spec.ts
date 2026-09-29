@@ -67,6 +67,14 @@ describe('TENANT_RESOURCES registry', () => {
     expect(framework?.idor).toBe('permission');
     expect(HTTP_RESOURCES.some((r) => r.model === 'Framework')).toBe(true);
   });
+
+  it('incubation es scope-based (no TENANT_MODEL)', () => {
+    expect(TENANT_MODELS).not.toContain('Incubation');
+    const incubation = GLOBAL_RESOURCES.find((r) => r.model === 'Incubation');
+    expect(incubation).toBeDefined();
+    expect(incubation?.idor).toBe('scope');
+    expect(HTTP_RESOURCES.some((r) => r.model === 'Incubation')).toBe(true);
+  });
 });
 
 (hasDatabase ? describe : describe.skip)(
