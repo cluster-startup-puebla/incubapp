@@ -5,6 +5,7 @@ import {
   Get,
   Headers,
   HttpCode,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -39,6 +40,7 @@ import {
   STARTUP_FILTERS,
   STARTUP_SORT_FIELDS,
   UpdateStartupDto,
+  UpdateStartupSnapshotDto,
 } from './startup.dto.js';
 import { StartupsService } from './startups.service.js';
 
@@ -142,6 +144,30 @@ export class StartupsController {
     });
     res.setHeader('Location', `/api/v1/startups/${created.id}`);
     return toResource(created);
+  }
+
+  @Patch(':id/snapshots/:snapshotId')
+  @ApiOperation({
+    summary: 'Update the current startup snapshot (closed → 409)',
+  })
+  @RequirePermissions('startup:update')
+  async updateSnapshot(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('snapshotId', ParseUUIDPipe) snapshotId: string,
+    @Body() body: UpdateStartupSnapshotDto,
+    @Req() req: AuditRequest,
+  ) {
+    const snapshot = await this.startups.getSnapshot(snapshotId);
+    if (snapshot.startupId !== id) {
+      throw new NotFoundException('Startup snapshot not found');
+    }
+    req.auditBefore = snapshot;
+    return toResource(
+      await this.startups.updateSnapshot(snapshotId, body, {
+        roles: req.membershipRoles ?? [],
+        isSuperAdmin: Boolean(req.user?.isSuperAdmin),
+      }),
+    );
   }
 
   @Patch(':id')

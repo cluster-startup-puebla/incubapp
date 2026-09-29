@@ -8,6 +8,7 @@ import {
 import type {
   Prisma,
   Startup,
+  StartupSnapshot,
   StartupVisibility,
 } from '../generated/prisma/client.js';
 import { withStableIdOrder } from '../common/query/pagination.js';
@@ -32,6 +33,11 @@ export type UpdateStartupInput = {
   visibility?: StartupVisibility;
 };
 
+export type UpdateStartupSnapshotInput = {
+  name?: string;
+  domain?: string;
+};
+
 export type ListStartupsArgs = {
   skip: number;
   take: number;
@@ -52,6 +58,28 @@ const ELEVATED_ROLES = new Set([
   'cluster_admin',
   'mentor',
 ]);
+
+type SnapshotWriter = {
+  startupSnapshot: {
+    findFirst: (args: {
+      where: { startupId: string; validTo: null };
+      orderBy: { validFrom: 'desc' };
+    }) => Promise<{ id: string } | null>;
+    update: (args: {
+      where: { id: string };
+      data: { validTo: Date };
+    }) => Promise<unknown>;
+    create: (args: {
+      data: {
+        startupId: string;
+        name: string;
+        domain: string;
+        validFrom: Date;
+        validTo: null;
+      };
+    }) => Promise<unknown>;
+  };
+};
 
 @Injectable()
 export class StartupsService {
@@ -181,6 +209,18 @@ export class StartupsService {
     return row;
   }
 
+  async getSnapshot(id: string): Promise<StartupSnapshot> {
+    const row = await this.prisma.client.startupSnapshot.findFirst({
+      where: { id },
+    });
+    if (!row) {
+      throw new NotFoundException('Startup snapshot not found');
+    }
+    // Ensure tenant / visibility via parent startup.
+    await this.get(row.startupId);
+    return row;
+  }
+
   /**
    * Domain similarity is advisory: colliding domain → 409 with candidates
    * unless super admin passes force=true. Non-super-admin force → 403.
@@ -251,8 +291,42 @@ export class StartupsService {
   }
 
   /**
+   * Closes the current snapshot and opens a new one at the same boundary.
+   * Contiguous half-open ranges satisfy the SQL EXCLUDE constraint.
+   */
+  private async rotateSnapshot(
+    tx: SnapshotWriter,
+    startupId: string,
+    next: { name: string; domain: string },
+  ): Promise<void> {
+    const current = await tx.startupSnapshot.findFirst({
+      where: { startupId, validTo: null },
+      orderBy: { validFrom: 'desc' },
+    });
+    if (!current) {
+      throw new ConflictException('No current startup snapshot');
+    }
+
+    const boundary = new Date();
+    await tx.startupSnapshot.update({
+      where: { id: current.id },
+      data: { validTo: boundary },
+    });
+    await tx.startupSnapshot.create({
+      data: {
+        startupId,
+        name: next.name,
+        domain: next.domain,
+        validFrom: boundary,
+        validTo: null,
+      },
+    });
+  }
+
+  /**
    * Optimistic concurrency: where is `{ id, version }`.
    * Missing row with matching version → 409 if still exists, else 404.
+   * Watched field changes (name, domain) rotate the snapshot in the same tx.
    */
   async update(
     id: string,
@@ -263,6 +337,12 @@ export class StartupsService {
     const existing = await this.get(id);
     this.assertFounderOwnerAccess(existing, actor);
 
+    const nextName = input.name !== undefined ? input.name : existing.name;
+    const nextDomain =
+      input.domain !== undefined ? input.domain : existing.domain;
+    const watchedChanged =
+      nextName !== existing.name || nextDomain !== existing.domain;
+
     const data: Prisma.StartupUpdateManyMutationInput = {
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.domain !== undefined ? { domain: input.domain } : {}),
@@ -272,23 +352,97 @@ export class StartupsService {
       version: { increment: 1 },
     };
 
-    const result = await this.prisma.client.startup.updateMany({
-      where: { id, version },
-      data,
-    });
-
-    if (result.count === 0) {
-      const still = await this.prisma.client.startup.findFirst({
-        where: this.withVisibility({ id }),
-        ...({ withDeleted: true } as object),
+    if (!watchedChanged) {
+      const result = await this.prisma.client.startup.updateMany({
+        where: { id, version },
+        data,
       });
-      if (!still || still.deletedAt !== null) {
-        throw new NotFoundException('Startup not found');
+
+      if (result.count === 0) {
+        const still = await this.prisma.client.startup.findFirst({
+          where: this.withVisibility({ id }),
+          ...({ withDeleted: true } as object),
+        });
+        if (!still || still.deletedAt !== null) {
+          throw new NotFoundException('Startup not found');
+        }
+        throw new ConflictException('Version conflict');
       }
-      throw new ConflictException('Version conflict');
+
+      return this.get(id);
     }
 
+    await this.prisma.client.$transaction(async (tx) => {
+      const result = await tx.startup.updateMany({
+        where: { id, version },
+        data,
+      });
+
+      if (result.count === 0) {
+        const still = await tx.startup.findFirst({
+          where: this.withVisibility({ id }),
+          ...({ withDeleted: true } as object),
+        });
+        if (!still || still.deletedAt !== null) {
+          throw new NotFoundException('Startup not found');
+        }
+        throw new ConflictException('Version conflict');
+      }
+
+      await this.rotateSnapshot(tx, id, {
+        name: nextName,
+        domain: nextDomain,
+      });
+    });
+
     return this.get(id);
+  }
+
+  /**
+   * Corrects the current (open) snapshot only. Closed rows (validTo set) → 409.
+   * Keeps the parent startup name/domain in sync when those fields change.
+   */
+  async updateSnapshot(
+    snapshotId: string,
+    input: UpdateStartupSnapshotInput,
+    actor: StartupActorContext = { roles: [] },
+  ): Promise<StartupSnapshot> {
+    const snapshot = await this.prisma.client.startupSnapshot.findFirst({
+      where: { id: snapshotId },
+    });
+    if (!snapshot) {
+      throw new NotFoundException('Startup snapshot not found');
+    }
+
+    const startup = await this.get(snapshot.startupId);
+    this.assertFounderOwnerAccess(startup, actor);
+
+    if (snapshot.validTo !== null) {
+      throw new ConflictException('Cannot update a closed startup snapshot');
+    }
+
+    const nextName = input.name !== undefined ? input.name : snapshot.name;
+    const nextDomain =
+      input.domain !== undefined ? input.domain : snapshot.domain;
+
+    return this.prisma.client.$transaction(async (tx) => {
+      const updated = await tx.startupSnapshot.update({
+        where: { id: snapshotId },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.domain !== undefined ? { domain: input.domain } : {}),
+        },
+      });
+
+      if (nextName !== startup.name || nextDomain !== startup.domain) {
+        await tx.startup.update({
+          where: { id: startup.id },
+          data: { name: nextName, domain: nextDomain },
+        });
+      }
+
+      return updated;
+    });
   }
 
   async remove(

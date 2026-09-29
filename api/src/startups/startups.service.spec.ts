@@ -98,6 +98,8 @@ describe('StartupsService', () => {
     };
     const startupSnapshot = {
       create: createMockFn(),
+      findFirst: createMockFn(),
+      update: createMockFn(),
     };
     const baseStartup = {
       delete: createMockFn(),
@@ -211,10 +213,18 @@ describe('StartupsService', () => {
   });
 
   it('founder edita la suya 200', async () => {
-    const { service, startup } = setup();
+    const { service, startup, startupSnapshot } = setup();
     const row = sample();
-    startup.findFirst.mockResolvedValue(row);
     startup.updateMany.mockResolvedValue({ count: 1 });
+    startupSnapshot.findFirst.mockResolvedValue({
+      id: 'snap-1',
+      startupId: row.id,
+      name: row.name,
+      domain: row.domain,
+      validTo: null,
+    });
+    startupSnapshot.update.mockResolvedValue({});
+    startupSnapshot.create.mockResolvedValue({});
     let calls = 0;
     startup.findFirst.mockImplementation(() => {
       calls += 1;
@@ -226,6 +236,8 @@ describe('StartupsService', () => {
       service.update(row.id, 1, { name: 'Acme 2' }, { roles: ['founder'] }),
     );
     expect(updated.name).toBe('Acme 2');
+    expect(startupSnapshot.update.calls).toHaveLength(1);
+    expect(startupSnapshot.create.calls).toHaveLength(1);
   });
 
   it('founder edita otra 404', async () => {

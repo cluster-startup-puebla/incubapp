@@ -245,7 +245,8 @@ model Startup {
   @@map("startup")
 }
 
-/// Minimal current-name history row (T6.6 create only; T6.7 lifecycle later).
+/// Watched-field history for Startup (name, domain). Current row has validTo null.
+/// Overlap rejected by SQL EXCLUDE (startup_snapshot_no_overlap); no Prisma @@unique.
 model StartupSnapshot {
   id        String    @id @default(uuid(7)) @db.Uuid
   createdAt DateTime  @default(now()) @map("created_at")

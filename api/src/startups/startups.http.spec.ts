@@ -66,8 +66,10 @@ describe('StartupsController (HTTP)', () => {
     listDeleted: createMockFn(),
     get: createMockFn(),
     getWithDeleted: createMockFn(),
+    getSnapshot: createMockFn(),
     create: createMockFn(),
     update: createMockFn(),
+    updateSnapshot: createMockFn(),
     remove: createMockFn(),
     restore: createMockFn(),
     purge: createMockFn(),
@@ -270,6 +272,24 @@ describe('StartupsController (HTTP)', () => {
       .patch(`/api/v1/startups/${ID}`)
       .set('If-Match', '"1"')
       .send({ name: 'Stale' })
+      .expect(409);
+  });
+
+  it('PATCH snapshot cerrado 409', async () => {
+    const snapId = '01900000-0000-7000-8000-0000000000b1';
+    service.getSnapshot.mockResolvedValue({
+      id: snapId,
+      startupId: ID,
+      name: 'Old',
+      validTo: new Date('2026-02-01T00:00:00.000Z'),
+    });
+    service.updateSnapshot.mockRejectedValue(
+      new ConflictException('Cannot update a closed startup snapshot'),
+    );
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/startups/${ID}/snapshots/${snapId}`)
+      .send({ name: 'Nope' })
       .expect(409);
   });
 

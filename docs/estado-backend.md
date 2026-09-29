@@ -6,7 +6,23 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.7 snapshots en curso**. Checkpoint startups: pendiente de este commit. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.10 incubaciones en curso**. Checkpoint snapshots: pendiente de este commit. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.7 (`startup snapshots` lifecycle)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Cierra y abre | hecho | rename (name/domain) en transacción: vigente gana `validTo`, nace otro con `validTo` null; v1 queda en el cerrado |
+| Dos cambios | hecho | dos patches → tres snapshots contiguos (`validTo` = `validFrom` del siguiente) |
+| Solape | hecho | EXCLUDE gist `startup_snapshot_no_overlap` (tsrange `[)`) rechaza rangos que se pisan |
+| Pasado | hecho | `PATCH /startups/:id/snapshots/:snapshotId` con `validTo` set → 409 |
+| Rollback | hecho | si el segundo insert falla, la tx revierte: vigente sigue abierto, sin huérfano |
+
+Migración: `20260929083019_startup_snapshot_no_overlap` (`btree_gist` + EXCLUDE). StartupSnapshot **no** está en `SOFT_DELETE_MODELS`; sin `@@unique`.
+
+Verificación del padre: **383** tests, lint 0 errores, `openapi:check` (42 paths) y `db:check-uniques` ok. En vivo: rename cierra el snapshot y abre otro; segundo rename deja tres filas; PATCH de un cerrado **409**. El watch estaba detenido y el tipo de la transacción no compilaba; `rotateSnapshot` ahora acepta el cliente extendido.
+
+Gaps aceptados: sin T6.8 pivots, sin T6.10 / T6.12, sin resto de T3.6, sin T2.8.
 
 ## Hecho en T6.6 (`startups` mínimo POC)
 
@@ -36,7 +52,7 @@ Verificación del padre: **375** tests, lint 0 errores, `openapi:check` y `db:ch
 
 Verificación del padre en T4.9: spec 9/9. En vivo: health `{status:ok}` sin `x-powered-by`; origen `http://localhost:3000` con ACAO exacto; origen ajeno sin ACAO.
 
-Gaps aceptados: sin T6.7 (cerrar/abrir snapshot al rename, overlap, PATCH cerrado, rollback). Sin resto de T3.6 (cluster ve public, audit diff de visibility). Sin T6.8+ / T6.10 / T2.8.
+Gaps aceptados: sin resto de T3.6 (cluster ve public, audit diff de visibility). Sin T6.8+ / T6.10 / T2.8.
 
 ## Hecho en T6.5 (`frameworks` / stages / milestones / metric-defs)
 
@@ -182,7 +198,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.7 snapshots lifecycle (cerrar/abrir al rename, overlap, PATCH cerrado, rollback). No implementar T3.6 completo ni T2.8.
+T6.10 incubaciones (transiciones, una activa, fechas, exit reason). No implementar T6.8 pivots, T6.12, T3.6 completo ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 

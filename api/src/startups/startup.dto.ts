@@ -92,3 +92,25 @@ export const STARTUP_FILTERS = {
 };
 
 export const STARTUP_SEARCH_FIELDS = ['name', 'domain'] as const;
+
+/** Fields whose change closes the current StartupSnapshot and opens a new one. */
+export const STARTUP_SNAPSHOT_WATCHED_FIELDS = ['name', 'domain'] as const;
+
+const updateStartupSnapshotObjectSchema = z
+  .object({
+    name: nonEmptyString.optional(),
+    domain: nonEmptyString.optional(),
+  })
+  .strict();
+
+export const updateStartupSnapshotSchema =
+  updateStartupSnapshotObjectSchema.refine(
+    (value) => Object.keys(value).length > 0,
+    { message: 'At least one field is required' },
+  );
+
+assertNoForbiddenWriteFields(updateStartupSnapshotObjectSchema);
+
+export class UpdateStartupSnapshotDto extends createZodDto(
+  updateStartupSnapshotSchema,
+) {}
