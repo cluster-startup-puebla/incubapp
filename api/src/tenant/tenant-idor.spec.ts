@@ -59,6 +59,14 @@ describe('TENANT_RESOURCES registry', () => {
     expect(membership?.idor).toBe('scope');
     expect(HTTP_RESOURCES.some((r) => r.model === 'Membership')).toBe(true);
   });
+
+  it('framework es global permission-based (no TENANT_MODEL)', () => {
+    expect(TENANT_MODELS).not.toContain('Framework');
+    const framework = GLOBAL_RESOURCES.find((r) => r.model === 'Framework');
+    expect(framework).toBeDefined();
+    expect(framework?.idor).toBe('permission');
+    expect(HTTP_RESOURCES.some((r) => r.model === 'Framework')).toBe(true);
+  });
 });
 
 (hasDatabase ? describe : describe.skip)(

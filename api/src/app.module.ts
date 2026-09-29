@@ -13,6 +13,7 @@ import { ZodValidationPipe } from './common/validation/zod-validation.pipe.js';
 import { WriteRateLimitModule } from './common/throttle/write-rate-limit.module.js';
 import { WriteRateLimitGuard } from './common/throttle/write-rate-limit.guard.js';
 import { HealthModule } from './health/health.module.js';
+import { FrameworksModule } from './frameworks/frameworks.module.js';
 import { GeoUnitsModule } from './geo-units/geo-units.module.js';
 import { IncubatorsModule } from './incubators/incubators.module.js';
 import { InstitutionsModule } from './institutions/institutions.module.js';
@@ -47,6 +48,7 @@ import { UsersModule } from './users/users.module.js';
     StartupsModule,
     InstitutionsModule,
     IncubatorsModule,
+    FrameworksModule,
     GeoUnitsModule,
     UsersModule,
   ],

@@ -50,6 +50,13 @@ export const GLOBAL_RESOURCES = [
      */
     idor: 'scope' as const,
   },
+  {
+    model: 'Framework' as const,
+    basePath: '/api/v1/frameworks',
+    methods: ['GET', 'PATCH', 'DELETE'] as const,
+    /** Without permission → 403; frameworks are global (no incubator scoping). */
+    idor: 'permission' as const,
+  },
 ] as const;
 
 export type TenantResource = (typeof TENANT_RESOURCES)[number];

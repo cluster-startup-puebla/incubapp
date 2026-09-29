@@ -99,7 +99,11 @@ describe('IncubatorsService', () => {
       base: { incubator: baseIncubator, incubation: baseIncubation },
     } as unknown as PrismaService;
 
-    const service = new IncubatorsService(prisma);
+    const frameworks = {
+      assertPublishedFramework: () => Promise.resolve(),
+    };
+
+    const service = new IncubatorsService(prisma, frameworks as never);
     return {
       service,
       incubator,
@@ -107,6 +111,7 @@ describe('IncubatorsService', () => {
       institution,
       baseIncubator,
       baseIncubation,
+      frameworks,
     };
   }
 

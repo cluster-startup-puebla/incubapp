@@ -6,7 +6,27 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.4 users/memberships cerrado en este checkpoint**. Siguiente: T6.5 frameworks. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.5 frameworks cerrado en este checkpoint**. Siguiente: T6.6 startups. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.5 (`frameworks` / stages / milestones / metric-defs)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Publicado inmutable | hecho | PATCH de framework `PUBLISHED` → 409; clonar a nueva major |
+| Clone v2 DRAFT | hecho | `POST /:id/clone` (cluster_admin / super admin) → 201; v1 intacta; copia stages/milestones/metricDefs |
+| Orden de etapas | hecho | `sortOrder` contiguo 1..n sin huecos ni duplicados → 422 |
+| Incubadora → draft | hecho | `Incubator.frameworkId` solo si framework `PUBLISHED` → 422 |
+| Soft delete | hecho | Framework, FrameworkStage, Milestone, MetricDef en `SOFT_DELETE_MODELS` + check-uniques |
+| Unique parcial | hecho | `(name, major_version)`, `(framework_id, sort_order)`, `(stage_id, sort_order)`, `(framework_id, key)` |
+| HTTP | hecho | list/get/create/update/delete/restore/trash/purge + stages/publish/clone; estilo institutions |
+| Permisos | hecho | recurso `framework`; publish/clone solo cluster_admin/super admin; director lee publicados |
+| OpenAPI | hecho | controller en `openapi-check.ts` y `public-routes.spec.ts` |
+
+Migración: `20260929080639_framework_milestone_metric_incubator` (`milestone`, `metric_def`, `incubator.framework_id` + índices parciales).
+
+Verificación del padre: **333** tests, lint 0 errores, `openapi:check` (38 paths) y `db:check-uniques` ok. El API arrancó con `FrameworksModule`. En vivo: PATCH publicado 409, clone 201 DRAFT major 2 con v1 intacta, hueco de `sortOrder` 422, incubadora con framework DRAFT 422.
+
+Gaps aceptados: sin HTTP CRUD de milestones/metric-defs (schema + soft-delete + copia en clone). Publish/clone solo `cluster_admin` o super admin.
 
 ## Hecho en T6.4 (`users` / `memberships`)
 
@@ -132,7 +152,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.5 `frameworks` / stages / milestones (mínimo POC). No implementar T3.6 ni T2.8.
+T6.6 `startups` (mínimo POC). No implementar T3.6 ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 

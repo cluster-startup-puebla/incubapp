@@ -10,6 +10,8 @@ import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { assertOpenApiContract } from '../src/common/openapi/openapi-contract.js';
 import { HealthController } from '../src/health/health.controller.js';
 import { HealthService } from '../src/health/health.service.js';
+import { FrameworksController } from '../src/frameworks/frameworks.controller.js';
+import { FrameworksService } from '../src/frameworks/frameworks.service.js';
 import { GeoUnitsController } from '../src/geo-units/geo-units.controller.js';
 import { GeoUnitsService } from '../src/geo-units/geo-units.service.js';
 import { IncubatorsController } from '../src/incubators/incubators.controller.js';
@@ -35,6 +37,7 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
     InstitutionsController,
     GeoUnitsController,
     IncubatorsController,
+    FrameworksController,
     MembershipsController,
     UsersController,
   ],
@@ -111,6 +114,23 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
         restore: async () => ({}),
         purge: async () => undefined,
         mapFeatures: async () => ({ type: 'FeatureCollection', features: [] }),
+      },
+    },
+    {
+      provide: FrameworksService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        listDeleted: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
+        getWithDeleted: async () => ({}),
+        create: async () => ({}),
+        update: async () => ({}),
+        addStage: async () => ({}),
+        publish: async () => ({}),
+        clone: async () => ({}),
+        remove: async () => ({}),
+        restore: async () => ({}),
+        purge: async () => undefined,
       },
     },
     {

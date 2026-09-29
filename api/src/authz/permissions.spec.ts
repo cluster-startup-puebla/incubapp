@@ -24,6 +24,26 @@ const GEO_UNIT_READ_ONLY = {
   'geo-unit:purge': false,
 } as const;
 
+const FRAMEWORK_WRITER = {
+  'framework:list': true,
+  'framework:read': true,
+  'framework:create': true,
+  'framework:update': true,
+  'framework:delete': true,
+  'framework:restore': true,
+  'framework:purge': false,
+} as const;
+
+const FRAMEWORK_READ_ONLY = {
+  'framework:list': true,
+  'framework:read': true,
+  'framework:create': false,
+  'framework:update': false,
+  'framework:delete': false,
+  'framework:restore': false,
+  'framework:purge': false,
+} as const;
+
 const INCUBATOR_CLUSTER_ADMIN = {
   'incubator:list': true,
   'incubator:read': true,
@@ -124,6 +144,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_WRITER,
   },
   coorganizer: {
     'startup:list': true,
@@ -150,6 +171,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_WRITER,
   },
   director: {
     'startup:list': true,
@@ -176,6 +198,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   staff: {
     'startup:list': true,
@@ -202,6 +225,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   mentor: {
     'startup:list': true,
@@ -228,6 +252,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   founder: {
     'startup:list': true,
@@ -254,6 +279,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   judge: {
     'startup:list': true,
@@ -280,6 +306,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
 };
 
@@ -356,6 +383,24 @@ describe('permissions matrix', () => {
         permission: 'geo-unit:create',
         isSuperAdmin: true,
       }),
+    ).toBe(true);
+  });
+
+  it('director lee framework publicado', () => {
+    expect(roleHasPermission('director', 'framework:read')).toBe(true);
+    expect(roleHasPermission('director', 'framework:create')).toBe(false);
+    expect(roleHasPermission('director', 'framework:update')).toBe(false);
+    expect(
+      canPerform({ roles: ['director'], permission: 'framework:read' }),
+    ).toBe(true);
+  });
+
+  it('cluster_admin escribe framework', () => {
+    expect(roleHasPermission('cluster_admin', 'framework:create')).toBe(true);
+    expect(roleHasPermission('cluster_admin', 'framework:update')).toBe(true);
+    expect(roleHasPermission('cluster_admin', 'framework:purge')).toBe(false);
+    expect(
+      canPerform({ roles: ['cluster_admin'], permission: 'framework:create' }),
     ).toBe(true);
   });
 

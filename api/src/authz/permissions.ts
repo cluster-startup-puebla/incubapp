@@ -22,6 +22,7 @@ export const RESOURCES = [
   'membership',
   'user',
   'geo-unit',
+  'framework',
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -72,6 +73,31 @@ const GEO_UNIT_READ_ONLY = {
   'geo-unit:delete': false,
   'geo-unit:restore': false,
   'geo-unit:purge': false,
+} as const;
+
+/**
+ * Framework writers (draft CRUD). Publish/clone additionally require
+ * cluster_admin or super admin in the service.
+ */
+const FRAMEWORK_WRITER = {
+  'framework:list': true,
+  'framework:read': true,
+  'framework:create': true,
+  'framework:update': true,
+  'framework:delete': true,
+  'framework:restore': true,
+  'framework:purge': false,
+} as const;
+
+/** Directors and operators may list/read published frameworks. */
+const FRAMEWORK_READ_ONLY = {
+  'framework:list': true,
+  'framework:read': true,
+  'framework:create': false,
+  'framework:update': false,
+  'framework:delete': false,
+  'framework:restore': false,
+  'framework:purge': false,
 } as const;
 
 /** Incubator tenant-root permissions (scope enforced in service, not TENANT_MODELS). */
@@ -152,6 +178,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_WRITER,
   },
   coorganizer: {
     'startup:list': true,
@@ -178,6 +205,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_WRITER,
   },
   director: {
     'startup:list': true,
@@ -204,6 +232,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   staff: {
     'startup:list': true,
@@ -230,6 +259,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   mentor: {
     'startup:list': true,
@@ -256,6 +286,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   founder: {
     'startup:list': true,
@@ -282,6 +313,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
   judge: {
     'startup:list': true,
@@ -308,6 +340,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:purge': false,
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
+    ...FRAMEWORK_READ_ONLY,
   },
 };
 

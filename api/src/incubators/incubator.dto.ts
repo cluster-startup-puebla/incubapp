@@ -20,6 +20,7 @@ const longitude = z
   .max(180, 'longitude must be between -180 and 180');
 
 const institutionId = z.string().uuid().nullable();
+const frameworkId = z.string().uuid().nullable();
 
 export const createIncubatorSchema = z
   .object({
@@ -28,6 +29,7 @@ export const createIncubatorSchema = z
     latitude: latitude.optional().nullable(),
     longitude: longitude.optional().nullable(),
     institutionId: institutionId.optional().nullable(),
+    frameworkId: frameworkId.optional().nullable(),
   })
   .strict();
 
@@ -38,6 +40,7 @@ const updateIncubatorObjectSchema = z
     latitude: latitude.optional().nullable(),
     longitude: longitude.optional().nullable(),
     institutionId: institutionId.optional().nullable(),
+    frameworkId: frameworkId.optional().nullable(),
   })
   .strict();
 
@@ -77,6 +80,7 @@ export const INCUBATOR_FILTERS = {
   name: { type: 'string' as const, operators: ['eq', 'in'] as const },
   slug: { type: 'string' as const, operators: ['eq', 'in'] as const },
   institutionId: { type: 'string' as const, operators: ['eq', 'in'] as const },
+  frameworkId: { type: 'string' as const, operators: ['eq', 'in'] as const },
   createdAt: {
     type: 'date' as const,
     operators: ['gte', 'lte', 'gt', 'lt', 'eq'] as const,

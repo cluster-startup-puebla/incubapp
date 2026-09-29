@@ -12,6 +12,10 @@ const SOFT_DELETE_MODELS = [
   'Incubator',
   'Startup',
   'GeoUnit',
+  'Framework',
+  'FrameworkStage',
+  'Milestone',
+  'MetricDef',
 ];
 
 function extractModelBlock(schema: string, model: string): string | null {

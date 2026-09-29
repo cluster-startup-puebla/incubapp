@@ -10,6 +10,7 @@ import {
 } from '../context/request-context.js';
 import { withStableIdOrder } from '../common/query/pagination.js';
 import { buildSearchWhere, mergeWhere } from '../common/query/search.js';
+import { FrameworksService } from '../frameworks/frameworks.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { INCUBATOR_SEARCH_FIELDS } from './incubator.dto.js';
 
@@ -19,6 +20,7 @@ export type CreateIncubatorInput = {
   latitude?: number | null;
   longitude?: number | null;
   institutionId?: string | null;
+  frameworkId?: string | null;
 };
 
 export type UpdateIncubatorInput = {
@@ -27,6 +29,7 @@ export type UpdateIncubatorInput = {
   latitude?: number | null;
   longitude?: number | null;
   institutionId?: string | null;
+  frameworkId?: string | null;
 };
 
 export type ListIncubatorsArgs = {
@@ -55,7 +58,10 @@ export type GeoJsonFeatureCollection = {
 
 @Injectable()
 export class IncubatorsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly frameworks: FrameworksService,
+  ) {}
 
   /**
    * Tenant root is not in TENANT_MODELS. Directors (and others with ALS
@@ -176,6 +182,7 @@ export class IncubatorsService {
 
   async create(input: CreateIncubatorInput): Promise<Incubator> {
     await this.assertInstitutionExists(input.institutionId);
+    await this.frameworks.assertPublishedFramework(input.frameworkId);
     return this.prisma.client.incubator.create({
       data: {
         name: input.name,
@@ -183,6 +190,7 @@ export class IncubatorsService {
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
         institutionId: input.institutionId ?? null,
+        frameworkId: input.frameworkId ?? null,
       },
     });
   }
@@ -198,6 +206,7 @@ export class IncubatorsService {
   ): Promise<Incubator> {
     this.assertScopeAccess(id);
     await this.assertInstitutionExists(input.institutionId);
+    await this.frameworks.assertPublishedFramework(input.frameworkId);
 
     const data: Prisma.IncubatorUpdateManyMutationInput = {
       ...(input.name !== undefined ? { name: input.name } : {}),
@@ -206,6 +215,9 @@ export class IncubatorsService {
       ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
       ...(input.institutionId !== undefined
         ? { institutionId: input.institutionId }
+        : {}),
+      ...(input.frameworkId !== undefined
+        ? { frameworkId: input.frameworkId }
         : {}),
       version: { increment: 1 },
     };

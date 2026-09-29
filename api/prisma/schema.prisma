@@ -192,11 +192,14 @@ model Incubator {
   longitude     Float?
   institutionId String?      @map("institution_id") @db.Uuid
   institution   Institution? @relation(fields: [institutionId], references: [id])
+  frameworkId   String?      @map("framework_id") @db.Uuid
+  framework     Framework?   @relation(fields: [frameworkId], references: [id])
   startups      Startup[]
   incubations   Incubation[]
 
   // Active uniqueness: slug WHERE deleted_at IS NULL — SQL migration
   @@index([institutionId])
+  @@index([frameworkId])
   @@map("incubator")
 }
 
@@ -266,7 +269,7 @@ enum FrameworkStatus {
   PUBLISHED
 }
 
-/// @business
+/// @business — versioned incubation standard (PUBLISHED is immutable)
 model Framework {
   id          String    @id @default(uuid(7)) @db.Uuid
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -281,11 +284,14 @@ model Framework {
   majorVersion Int             @default(1) @map("major_version")
   status       FrameworkStatus @default(DRAFT)
   stages       FrameworkStage[]
+  metricDefs   MetricDef[]
+  incubators   Incubator[]
 
+  // Active uniqueness: (name, major_version) WHERE deleted_at IS NULL — SQL migration
   @@map("framework")
 }
 
-/// @business
+/// @business — ordered stage within a framework version
 model FrameworkStage {
   id          String    @id @default(uuid(7)) @db.Uuid
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -296,11 +302,57 @@ model FrameworkStage {
   deletedById String?   @map("deleted_by_id")
   version     Int       @default(1)
 
-  frameworkId String    @map("framework_id") @db.Uuid
-  framework   Framework @relation(fields: [frameworkId], references: [id])
+  frameworkId String      @map("framework_id") @db.Uuid
+  framework   Framework   @relation(fields: [frameworkId], references: [id])
   name        String
-  sortOrder   Int       @map("sort_order")
+  sortOrder   Int         @map("sort_order")
+  milestones  Milestone[]
 
+  // Active uniqueness: (framework_id, sort_order) WHERE deleted_at IS NULL — SQL migration
   @@index([frameworkId])
   @@map("framework_stage")
+}
+
+/// @business — gate within a stage (progress API is T6.11)
+model Milestone {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  stageId           String         @map("stage_id") @db.Uuid
+  stage             FrameworkStage @relation(fields: [stageId], references: [id])
+  name              String
+  sortOrder         Int            @map("sort_order")
+  evidenceRequired  Boolean        @default(false) @map("evidence_required")
+
+  // Active uniqueness: (stage_id, sort_order) WHERE deleted_at IS NULL — SQL migration
+  @@index([stageId])
+  @@map("milestone")
+}
+
+/// @business — metric definition for a framework version (readings are T6.12)
+model MetricDef {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  frameworkId   String    @map("framework_id") @db.Uuid
+  framework     Framework @relation(fields: [frameworkId], references: [id])
+  key           String
+  name          String
+  allowNegative Boolean   @default(false) @map("allow_negative")
+
+  // Active uniqueness: (framework_id, key) WHERE deleted_at IS NULL — SQL migration
+  @@index([frameworkId])
+  @@map("metric_def")
 }

@@ -1,9 +1,14 @@
 import 'dotenv/config';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import {
   runWithRequestContext,
   runWithUser,
 } from '../context/request-context.js';
+import { FrameworksService } from '../frameworks/frameworks.service.js';
 import { IncubatorsService } from './incubators.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import {
@@ -73,10 +78,12 @@ describe('T6.3 incubators domain extras', () => {
       const mod = await import('../prisma/prisma.client.js');
       prisma = mod.prisma;
       base = mod.baseClient;
-      service = new IncubatorsService({
+      const prismaService = {
         client: prisma,
         base,
-      } as unknown as PrismaService);
+      } as unknown as PrismaService;
+      const frameworks = new FrameworksService(prismaService);
+      service = new IncubatorsService(prismaService, frameworks);
     });
 
     afterAll(async () => {
@@ -207,6 +214,38 @@ describe('T6.3 incubators domain extras', () => {
       );
       expect(ours).toHaveLength(2);
       expect(geo.type).toBe('FeatureCollection');
+    });
+
+    it('incubadora a draft framework 422', async () => {
+      const prismaService = {
+        client: prisma,
+        base,
+      } as unknown as PrismaService;
+      const frameworks = new FrameworksService(prismaService);
+      const draft = await runWithUser('t65-actor', async () =>
+        frameworks.create({
+          name: `Draft FW ${suffix}`,
+          majorVersion: 99,
+          stages: [{ name: 'Only', sortOrder: 1 }],
+        }),
+      );
+
+      await expect(
+        runWithUser('t65-actor', async () =>
+          service.create({
+            name: `Draft Inc ${suffix}`,
+            slug: `draft-fw-${suffix}`,
+            frameworkId: draft.id,
+          }),
+        ),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+
+      await base.$executeRawUnsafe(
+        `DELETE FROM framework_stage WHERE framework_id = '${draft.id}'`,
+      );
+      await base.$executeRawUnsafe(
+        `DELETE FROM framework WHERE id = '${draft.id}'`,
+      );
     });
   },
 );
