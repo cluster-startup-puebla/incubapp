@@ -13,8 +13,10 @@ import { betterAuth } from 'better-auth';
 import { memoryAdapter } from '@better-auth/memory-adapter';
 import {
   configureApp,
+  JSON_BODY_LIMIT_BYTES,
   NEST_BODY_PARSER_DISABLED,
   resolveCorsOrigins,
+  TRUST_PROXY_HOPS,
 } from './configure-app.js';
 
 @Controller('echo')
@@ -86,7 +88,7 @@ describe('configureApp / auth mount', () => {
     expect(response.body).toEqual({ body: { hello: 'world' } });
   });
 
-  it('preflight', async () => {
+  it('origen permitido', async () => {
     const server = app.getHttpServer() as Parameters<typeof request>[0];
     const response = await request(server)
       .options('/api/v1/echo/ping')
@@ -100,7 +102,7 @@ describe('configureApp / auth mount', () => {
     );
   });
 
-  it('origen ajeno', async () => {
+  it('origen prohibido', async () => {
     const server = app.getHttpServer() as Parameters<typeof request>[0];
     const response = await request(server)
       .options('/api/v1/echo/ping')
@@ -108,6 +110,32 @@ describe('configureApp / auth mount', () => {
       .set('Access-Control-Request-Method', 'GET');
 
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('body grande', async () => {
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    const oversized = 'x'.repeat(JSON_BODY_LIMIT_BYTES + 1);
+    const response = await request(server)
+      .post('/api/v1/echo')
+      .set('Content-Type', 'application/json')
+      .send(oversized);
+
+    expect(response.status).toBe(413);
+  });
+
+  it('powered by', async () => {
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    const response = await request(server).get('/api/v1/echo/ping');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('trust proxy explicito', () => {
+    const expressApp = app.getHttpAdapter().getInstance() as {
+      get: (key: string) => unknown;
+    };
+    expect(expressApp.get('trust proxy')).toBe(TRUST_PROXY_HOPS);
   });
 
   it('body parser global sigue apagado', () => {

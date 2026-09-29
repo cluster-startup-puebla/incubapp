@@ -6,7 +6,7 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.6 startups en curso** (alta en vivo 409 por llave foránea, sin commit). En paralelo ya quedaron T4.10, T4.13 y T4.15. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.6 startups en curso** (alta en vivo 409 por llave foránea, sin commit). T4.9–T4.15 del corte transversal ya están. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
 
 ## Hecho en T6.6 (`startups` mínimo POC)
 
@@ -25,13 +25,16 @@ Migración: `20260929081701_startup_domain_visibility_snapshot` (`domain`, `visi
 
 El subagente reportó **363** tests, lint 0 errores, `openapi:check` (41 paths) y `db:check-uniques` ok. El padre todavía no cierra el checkpoint: `POST /api/v1/startups` en vivo respondió **409** `P2003`.
 
-## Hecho en paralelo (`T4.10` / `T4.13` / `T4.15`)
+## Hecho en paralelo (`T4.9` / `T4.10` / `T4.13` / `T4.15`)
 
 | Pieza | Estado | Notas |
 |-------|--------|-------|
+| Hardening | hecho | helmet, `x-powered-by` off, `trust proxy` = 1, CORS allow-list, JSON 1 MB fuera de `/api/auth` |
 | Logs | hecho | `RequestLoggingInterceptor` global; redacta password, token, authorization y cookie |
 | Idempotencia | hecho | store Redis TTL 24 h, key con user id; opt-in `@RequireIdempotency()` |
 | Object storage | hecho | `ObjectStorage` put / signedGet / delete sobre MinIO; bucket desde config |
+
+Verificación del padre en T4.9: spec 9/9. En vivo: health `{status:ok}` sin `x-powered-by`; origen `http://localhost:3000` con ACAO exacto; origen ajeno sin ACAO.
 
 Gaps aceptados: sin T6.7 (cerrar/abrir snapshot al rename, overlap, PATCH cerrado, rollback). Sin resto de T3.6 (cluster ve public, audit diff de visibility). Sin T6.8+ / T6.10 / T2.8.
 
