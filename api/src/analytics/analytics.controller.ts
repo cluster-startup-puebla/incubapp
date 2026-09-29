@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { PermissionsGuard } from '../authz/permissions.guard.js';
 import { RequirePermissions } from '../authz/require-permissions.decorator.js';
@@ -33,5 +33,58 @@ export class AnalyticsController {
         roles: req.membershipRoles ?? [],
       }),
     );
+  }
+
+  @Get('map')
+  @ApiOperation({
+    summary:
+      'GeoJSON FeatureCollection of incubators with coordinates (raw body, not {data})',
+  })
+  @ApiOkResponse({
+    description:
+      'Raw GeoJSON FeatureCollection (type + features). Not wrapped in { data }. Soft-deleted and null-coordinate incubators are omitted.',
+    schema: {
+      type: 'object',
+      required: ['type', 'features'],
+      properties: {
+        type: { type: 'string', enum: ['FeatureCollection'] },
+        features: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', enum: ['Feature'] },
+              geometry: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['Point'] },
+                  coordinates: {
+                    type: 'array',
+                    items: { type: 'number' },
+                    minItems: 2,
+                    maxItems: 2,
+                    description: '[longitude, latitude]',
+                  },
+                },
+              },
+              properties: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @RequirePermissions('analytics:read')
+  async map(@Req() req: RequestWithRoles) {
+    return this.analytics.mapFeatures({
+      roles: req.membershipRoles ?? [],
+    });
   }
 }

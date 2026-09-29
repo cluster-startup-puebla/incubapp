@@ -148,6 +148,7 @@ import type { CallHandler, ExecutionContext } from '@nestjs/common';
           startups: 0,
           funnel: { applied: 0, active: 0, graduated: 0, dropped: 0 },
         }),
+        mapFeatures: async () => ({ type: 'FeatureCollection', features: [] }),
       },
     },
     {

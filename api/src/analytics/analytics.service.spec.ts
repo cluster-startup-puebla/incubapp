@@ -49,6 +49,10 @@ describe('AnalyticsService (T7.1)', () => {
   function setup() {
     const incubator = {
       count: createMockFn<[{ where?: unknown }], number>(),
+      findMany: createMockFn<
+        [{ where?: unknown; orderBy?: unknown }],
+        unknown[]
+      >(),
     };
     const frameworkStage = {
       count: createMockFn<[{ where?: unknown }], number>(),
@@ -64,6 +68,7 @@ describe('AnalyticsService (T7.1)', () => {
     };
 
     incubator.count.mockResolvedValue(2);
+    incubator.findMany.mockResolvedValue([]);
     frameworkStage.count.mockResolvedValue(5);
     startup.count.mockResolvedValue(3);
     incubation.groupBy.mockResolvedValue([
@@ -283,5 +288,152 @@ describe('AnalyticsService (T7.1)', () => {
 
     expect(result.incubators).toBe(2);
     expect(incubator.count.calls).toHaveLength(1);
+  });
+});
+
+describe('AnalyticsService map (T7.3)', () => {
+  function setupMap() {
+    const incubator = {
+      count: createMockFn<[{ where?: unknown }], number>(),
+      findMany: createMockFn<
+        [{ where?: unknown; orderBy?: unknown }],
+        Array<{
+          id: string;
+          name: string;
+          slug: string;
+          latitude: number | null;
+          longitude: number | null;
+        }>
+      >(),
+    };
+    incubator.count.mockResolvedValue(0);
+    incubator.findMany.mockResolvedValue([]);
+
+    const prisma = {
+      client: {
+        incubator,
+        frameworkStage: { count: createMockFn() },
+        startup: { count: createMockFn() },
+        incubation: { groupBy: createMockFn() },
+      },
+      base: {},
+    } as unknown as PrismaService;
+
+    const service = new AnalyticsService(prisma);
+    return { service, incubator };
+  }
+
+  it('geojson: incubadoras con punto → FeatureCollection', async () => {
+    const { service, incubator } = setupMap();
+    incubator.findMany.mockResolvedValue([
+      {
+        id: '1',
+        name: 'A',
+        slug: 'a',
+        latitude: 19.43,
+        longitude: -99.13,
+      },
+      {
+        id: '2',
+        name: 'B',
+        slug: 'b',
+        latitude: 20.6,
+        longitude: -100.4,
+      },
+    ]);
+
+    const geo = await runWithRequestContext(
+      {
+        userId: 'admin',
+        incubatorId: null,
+        isSuperAdmin: true,
+        actorId: 'admin',
+      },
+      () => service.mapFeatures({ roles: ['cluster_admin'] }),
+    );
+
+    expect(geo.type).toBe('FeatureCollection');
+    expect(geo.features).toHaveLength(2);
+    expect(geo.features[0].geometry.type).toBe('Point');
+    expect(geo.features[0].geometry.coordinates).toEqual([-99.13, 19.43]);
+    expect(geo.features[0].properties).toEqual({
+      id: '1',
+      name: 'A',
+      slug: 'a',
+    });
+  });
+
+  it('sin punto: lat/lng null se omite, status sigue ok', async () => {
+    const { service, incubator } = setupMap();
+    // findMany already filters not-null; still guard if a null slips through
+    incubator.findMany.mockResolvedValue([
+      {
+        id: '1',
+        name: 'A',
+        slug: 'a',
+        latitude: 19,
+        longitude: -99,
+      },
+      {
+        id: '2',
+        name: 'B',
+        slug: 'b',
+        latitude: 20,
+        longitude: -100,
+      },
+      {
+        id: '3',
+        name: 'C',
+        slug: 'c',
+        latitude: null,
+        longitude: null,
+      },
+    ]);
+
+    const geo = await runWithRequestContext(
+      {
+        userId: 'ca',
+        incubatorId: null,
+        isSuperAdmin: false,
+        actorId: 'ca',
+      },
+      () => service.mapFeatures({ roles: ['cluster_admin'] }),
+    );
+
+    expect(geo.type).toBe('FeatureCollection');
+    expect(geo.features).toHaveLength(2);
+  });
+
+  it('cluster_admin sin membership incubadora ve mapa (no 403)', async () => {
+    const { service, incubator } = setupMap();
+    incubator.findMany.mockResolvedValue([
+      {
+        id: '1',
+        name: 'A',
+        slug: 'a',
+        latitude: 19,
+        longitude: -99,
+      },
+    ]);
+
+    const geo = await runWithRequestContext(
+      {
+        userId: 'ca',
+        incubatorId: null,
+        isSuperAdmin: false,
+        actorId: 'ca',
+      },
+      () => service.mapFeatures({ roles: ['cluster_admin'] }),
+    );
+
+    expect(geo.features).toHaveLength(1);
+    const where = incubator.findMany.calls[0]?.[0]?.where as {
+      id?: string;
+      latitude?: unknown;
+      longitude?: unknown;
+    };
+    expect(where?.id).toBeUndefined();
+    expect(where?.latitude).toEqual({ not: null });
+    expect(where?.longitude).toEqual({ not: null });
   });
 });

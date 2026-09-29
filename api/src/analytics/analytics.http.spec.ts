@@ -51,6 +51,7 @@ describe('AnalyticsController (HTTP)', () => {
   let app: INestApplication;
   const service = {
     overview: createMockFn(),
+    mapFeatures: createMockFn(),
   };
 
   beforeAll(async () => {
@@ -82,11 +83,16 @@ describe('AnalyticsController (HTTP)', () => {
 
   beforeEach(() => {
     service.overview.calls.length = 0;
+    service.mapFeatures.calls.length = 0;
     service.overview.mockResolvedValue({
       incubators: 2,
       stages: 5,
       startups: 3,
       funnel: { applied: 4, active: 2, graduated: 1, dropped: 1 },
+    });
+    service.mapFeatures.mockResolvedValue({
+      type: 'FeatureCollection',
+      features: [],
     });
   });
 
@@ -122,5 +128,36 @@ describe('AnalyticsController (HTTP)', () => {
       from: '2026-01-01',
       to: '2026-01-31',
     });
+  });
+
+  it('GET map → FeatureCollection crudo (sin envelope)', async () => {
+    service.mapFeatures.mockResolvedValue({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [-99, 19] },
+          properties: { id: '1', name: 'A', slug: 'a' },
+        },
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [-100, 20] },
+          properties: { id: '2', name: 'B', slug: 'b' },
+        },
+      ],
+    });
+
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/analytics/map')
+      .expect(200);
+
+    const body = res.body as {
+      type: string;
+      features: unknown[];
+      data?: unknown;
+    };
+    expect(body.type).toBe('FeatureCollection');
+    expect(body.features).toHaveLength(2);
+    expect(body.data).toBeUndefined();
   });
 });

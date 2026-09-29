@@ -11,9 +11,13 @@ import {
   currentIncubatorId,
   currentIsSuperAdmin,
 } from '../context/request-context.js';
-import type { Prisma } from '../generated/prisma/client.js';
+import { withStableIdOrder } from '../common/query/pagination.js';
+import type { Incubator, Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { AnalyticsOverview } from './analytics.dto.js';
+import type {
+  AnalyticsOverview,
+  GeoJsonFeatureCollection,
+} from './analytics.dto.js';
 
 const CACHE_TTL_SECONDS = 300;
 const CACHE_GEN_KEY = 'analytics:overview:gen';
@@ -260,5 +264,52 @@ export class AnalyticsService implements OnModuleDestroy {
     }
 
     return { incubators, stages, startups, funnel };
+  }
+
+  /**
+   * GeoJSON FeatureCollection of incubators with both coordinates.
+   * Soft-deleted rows are omitted by the Prisma extension.
+   * Cluster-wide roles without X-Incubator-Id see the full cluster map.
+   */
+  async mapFeatures(
+    query: Pick<OverviewQuery, 'roles'> = {},
+  ): Promise<GeoJsonFeatureCollection> {
+    const roles = query.roles ?? [];
+    const scopeId = this.resolveScope(roles);
+    if (scopeId !== null) {
+      this.assertScopeAccess(scopeId);
+    }
+
+    const where: Prisma.IncubatorWhereInput = {
+      latitude: { not: null },
+      longitude: { not: null },
+      ...(scopeId !== null ? { id: scopeId } : {}),
+    };
+
+    const rows = await this.prisma.client.incubator.findMany({
+      where,
+      orderBy: withStableIdOrder([{ createdAt: 'desc' }]),
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features: rows
+        .filter(
+          (row): row is Incubator & { latitude: number; longitude: number } =>
+            row.latitude != null && row.longitude != null,
+        )
+        .map((row) => ({
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [row.longitude, row.latitude] as [number, number],
+          },
+          properties: {
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+          },
+        })),
+    };
   }
 }

@@ -32,3 +32,20 @@ export type AnalyticsOverview = {
     dropped: number;
   };
 };
+
+/** Raw GeoJSON body for GET /analytics/map (not an envelope { data }). */
+export type GeoJsonFeatureCollection = {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: {
+      type: 'Point';
+      coordinates: [number, number];
+    };
+    properties: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  }>;
+};

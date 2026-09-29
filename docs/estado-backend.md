@@ -6,7 +6,24 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T7.3 mapa en curso**. Checkpoint overview: pendiente de este commit. Checkpoint notifications: `60711c9`. Checkpoint metric-readings: `1eb8860`. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **POC del backend cerrado**. Checkpoint map: pendiente de este commit. Checkpoint overview: `1b20030`. Checkpoint notifications: `60711c9`. Checkpoint metric-readings: `1eb8860`. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T7.3 (`analytics` mapa)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| GeoJSON | hecho | `GET /analytics/map` → FeatureCollection crudo (sin envelope `{data}`) |
+| Puntos | hecho | incubadoras con lat+lng → Point; coords `[longitude, latitude]` |
+| Sin punto | hecho | lat o lng null se omite; status **200** |
+| Soft delete | hecho | omitidos vía extensión Prisma (client) |
+| Permisos | hecho | `analytics:read`; cluster_admin sin membership incubadora **no** 403; sin `@RequiresTenant()` |
+| Receta | hecho | handler en `AnalyticsController`; OpenAPI summary + `ApiOkResponse` FeatureCollection; mock en `openapi-check.ts` |
+
+Migración: ninguna.
+
+Verificación del padre: **473** tests, lint 0 errores, `openapi:check` (55 paths) y `db:check-uniques` ok. En vivo: FeatureCollection crudo con el punto `[-98.2, 19.04]`; una incubadora sin coordenadas no aparece y la respuesta sigue en **200**.
+
+Gaps aceptados: sin T7.2 benchmarks, sin T7.4 CSV, sin T6.18, sin T8. `GET /incubators/map` (T6.3) sigue existiendo con `incubator:list`.
 
 ## Hecho en T7.1 (`analytics` overview)
 
@@ -25,7 +42,7 @@ Migración: ninguna (solo lectura agregada).
 
 Verificación del padre: **469** tests, lint 0 errores, `openapi:check` (54 paths) y `db:check-uniques` ok. En vivo: overview **200** con incubators 1, stages 3, startups 4 y embudo graduated 1; segunda lectura igual; `from > to` **400**. Sin migración.
 
-Gaps aceptados: sin startups-por-etapa/sector (schema no tiene stage assignment ni sector), sin T7.2 benchmarks, sin T7.3 map, sin T7.4 CSV, sin T6.18, sin T8.
+Gaps aceptados: sin startups-por-etapa/sector (schema no tiene stage assignment ni sector), sin T7.2 benchmarks, sin T7.4 CSV, sin T6.18, sin T8.
 
 ## Hecho en T6.17 (`notifications` in-app)
 
