@@ -6,9 +6,13 @@ import { brandSource } from './brand-source';
 
 export function TenantTheme({
   slug,
+  revision = 0,
+  showLogo = true,
   children,
 }: {
   slug: string | null;
+  revision?: number;
+  showLogo?: boolean;
   children: ReactNode;
 }) {
   const [brand, setBrand] = useState<TenantBrandConfig | null>(null);
@@ -23,7 +27,7 @@ export function TenantTheme({
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, revision]);
 
   return (
     <div
@@ -31,7 +35,7 @@ export function TenantTheme({
       style={brandToStyle(brand)}
       className="min-h-screen bg-background text-foreground"
     >
-      {brand?.logoUrl ? <img src={brand.logoUrl} alt="" /> : null}
+      {showLogo && brand?.logoUrl ? <img src={brand.logoUrl} alt="" /> : null}
       {children}
     </div>
   );
