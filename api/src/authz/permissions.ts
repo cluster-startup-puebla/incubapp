@@ -24,6 +24,7 @@ export const RESOURCES = [
   'user',
   'geo-unit',
   'framework',
+  'analytics',
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -99,6 +100,27 @@ const FRAMEWORK_READ_ONLY = {
   'framework:delete': false,
   'framework:restore': false,
   'framework:purge': false,
+} as const;
+
+/** Overview / funnel analytics (scope enforced in AnalyticsService). */
+const ANALYTICS_READER = {
+  'analytics:list': false,
+  'analytics:read': true,
+  'analytics:create': false,
+  'analytics:update': false,
+  'analytics:delete': false,
+  'analytics:restore': false,
+  'analytics:purge': false,
+} as const;
+
+const ANALYTICS_DENIED = {
+  'analytics:list': false,
+  'analytics:read': false,
+  'analytics:create': false,
+  'analytics:update': false,
+  'analytics:delete': false,
+  'analytics:restore': false,
+  'analytics:purge': false,
 } as const;
 
 /** Incubator tenant-root permissions (scope enforced in service, not TENANT_MODELS). */
@@ -212,6 +234,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_WRITER,
+    ...ANALYTICS_READER,
   },
   coorganizer: {
     'startup:list': true,
@@ -240,6 +263,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_WRITER,
+    ...ANALYTICS_READER,
   },
   director: {
     'startup:list': true,
@@ -268,6 +292,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_READER,
   },
   staff: {
     'startup:list': true,
@@ -296,6 +321,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_READER,
   },
   mentor: {
     'startup:list': true,
@@ -324,6 +350,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_DENIED,
   },
   founder: {
     'startup:list': true,
@@ -352,6 +379,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_DENIED,
   },
   judge: {
     'startup:list': true,
@@ -380,6 +408,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_DENIED,
   },
 };
 

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import type {
   Prisma,
@@ -11,6 +12,7 @@ import type {
   StartupSnapshot,
   StartupVisibility,
 } from '../generated/prisma/client.js';
+import { AnalyticsService } from '../analytics/analytics.service.js';
 import { withStableIdOrder } from '../common/query/pagination.js';
 import { buildSearchWhere, mergeWhere } from '../common/query/search.js';
 import {
@@ -83,7 +85,14 @@ type SnapshotWriter = {
 
 @Injectable()
 export class StartupsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly analytics?: AnalyticsService,
+  ) {}
+
+  private async bumpAnalyticsCache(): Promise<void> {
+    await this.analytics?.invalidateOverviewCache();
+  }
 
   /**
    * Private startups of another incubator are excluded in the query
@@ -263,8 +272,8 @@ export class StartupsService {
       throw new BadRequestException('X-Incubator-Id is required');
     }
 
-    return this.prisma.client.$transaction(async (tx) => {
-      const created = await tx.startup.create({
+    const created = await this.prisma.client.$transaction(async (tx) => {
+      const row = await tx.startup.create({
         data: {
           name: input.name,
           domain: input.domain,
@@ -278,16 +287,18 @@ export class StartupsService {
 
       await tx.startupSnapshot.create({
         data: {
-          startupId: created.id,
-          name: created.name,
-          domain: created.domain,
+          startupId: row.id,
+          name: row.name,
+          domain: row.domain,
           validFrom: new Date(),
           validTo: null,
         },
       });
 
-      return created;
+      return row;
     });
+    await this.bumpAnalyticsCache();
+    return created;
   }
 
   /**
@@ -369,6 +380,7 @@ export class StartupsService {
         throw new ConflictException('Version conflict');
       }
 
+      await this.bumpAnalyticsCache();
       return this.get(id);
     }
 
@@ -395,6 +407,7 @@ export class StartupsService {
       });
     });
 
+    await this.bumpAnalyticsCache();
     return this.get(id);
   }
 
@@ -451,9 +464,11 @@ export class StartupsService {
   ): Promise<Startup> {
     const row = await this.get(id);
     this.assertFounderOwnerAccess(row, actor);
-    return this.prisma.client.startup.delete({
+    const deleted = await this.prisma.client.startup.delete({
       where: { id: row.id },
     });
+    await this.bumpAnalyticsCache();
+    return deleted;
   }
 
   async restore(
@@ -479,11 +494,13 @@ export class StartupsService {
       );
     }
 
-    return (await (
+    const restored = (await (
       this.prisma.client.startup as typeof this.prisma.client.startup & {
         restore: (entityId: string) => Promise<Startup>;
       }
     ).restore(id)) as Startup;
+    await this.bumpAnalyticsCache();
+    return restored;
   }
 
   /**
@@ -498,5 +515,6 @@ export class StartupsService {
     await this.prisma.base.startup.delete({
       where: { id },
     });
+    await this.bumpAnalyticsCache();
   }
 }

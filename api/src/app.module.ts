@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { validateEnv } from './config/env.schema.js';
 import { auth } from './auth.js';
+import { AnalyticsModule } from './analytics/analytics.module.js';
 import { AuthzModule } from './authz/authz.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { RequestContextInterceptor } from './auth/request-context.interceptor.js';
@@ -60,6 +61,7 @@ import { UsersModule } from './users/users.module.js';
     FrameworksModule,
     GeoUnitsModule,
     UsersModule,
+    AnalyticsModule,
   ],
   providers: [
     {

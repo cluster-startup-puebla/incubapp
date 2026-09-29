@@ -6,7 +6,26 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T7.1 overview en curso**. Checkpoint notifications: pendiente de este commit. Checkpoint metric-readings: `1eb8860`. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T7.3 mapa en curso**. Checkpoint overview: pendiente de este commit. Checkpoint notifications: `60711c9`. Checkpoint metric-readings: `1eb8860`. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T7.1 (`analytics` overview)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Conteos | hecho | `GET /analytics/overview` → incubators, stages, startups, embudo applied/active/graduated/dropped |
+| Excluye | hecho | soft-delete vía extensión; startups `PRIVATE` fuera del total del clúster |
+| Tenant | hecho | director con `x-incubator-id` solo su incubadora; foreign scope → **404** (no 403) |
+| Cluster admin | hecho | sin header ve agregado; sin `@RequiresTenant()` (no 403 por falta de membership incubadora) |
+| Fechas | hecho | `from`/`to` YYYY-MM-DD strings; `from > to` → 400; sin `z.date()` |
+| Cache | hecho | Redis 5 min (ioredis + `REDIS_URL`); write startup/incubator/incubation invalida; Redis throw → fail open |
+| Receta | hecho | envelope `toResource`, matriz `analytics:read`, OpenAPI + public-routes |
+| Soft delete / uniques | hecho | sin modelo nuevo; sin `@@unique`; **no** en `TENANT_MODELS` |
+
+Migración: ninguna (solo lectura agregada).
+
+Verificación del padre: **469** tests, lint 0 errores, `openapi:check` (54 paths) y `db:check-uniques` ok. En vivo: overview **200** con incubators 1, stages 3, startups 4 y embudo graduated 1; segunda lectura igual; `from > to` **400**. Sin migración.
+
+Gaps aceptados: sin startups-por-etapa/sector (schema no tiene stage assignment ni sector), sin T7.2 benchmarks, sin T7.3 map, sin T7.4 CSV, sin T6.18, sin T8.
 
 ## Hecho en T6.17 (`notifications` in-app)
 

@@ -26,6 +26,8 @@ import { MetricReadingsController } from '../src/metric-readings/metric-readings
 import { MetricReadingsService } from '../src/metric-readings/metric-readings.service.js';
 import { NotificationsController } from '../src/notifications/notifications.controller.js';
 import { NotificationsService } from '../src/notifications/notifications.service.js';
+import { AnalyticsController } from '../src/analytics/analytics.controller.js';
+import { AnalyticsService } from '../src/analytics/analytics.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
 import { SessionsService } from '../src/sessions/sessions.service.js';
 import { StartupsController } from '../src/startups/startups.controller.js';
@@ -47,6 +49,7 @@ import type { CallHandler, ExecutionContext } from '@nestjs/common';
     IncubationsController,
     MetricReadingsController,
     NotificationsController,
+    AnalyticsController,
     GeoUnitsController,
     IncubatorsController,
     FrameworksController,
@@ -134,6 +137,17 @@ import type { CallHandler, ExecutionContext } from '@nestjs/common';
         get: async () => ({}),
         markRead: async () => ({}),
         create: async () => ({}),
+      },
+    },
+    {
+      provide: AnalyticsService,
+      useValue: {
+        overview: async () => ({
+          incubators: 0,
+          stages: 0,
+          startups: 0,
+          funnel: { applied: 0, active: 0, graduated: 0, dropped: 0 },
+        }),
       },
     },
     {

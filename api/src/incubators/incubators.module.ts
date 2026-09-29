@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AnalyticsModule } from '../analytics/analytics.module.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { AuthzModule } from '../authz/authz.module.js';
 import { FrameworksModule } from '../frameworks/frameworks.module.js';
@@ -6,7 +7,7 @@ import { IncubatorsController } from './incubators.controller.js';
 import { IncubatorsService } from './incubators.service.js';
 
 @Module({
-  imports: [AuthzModule, AuditModule, FrameworksModule],
+  imports: [AuthzModule, AuditModule, FrameworksModule, AnalyticsModule],
   controllers: [IncubatorsController],
   providers: [IncubatorsService],
   exports: [IncubatorsService],

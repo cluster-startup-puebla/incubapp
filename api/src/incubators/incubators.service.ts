@@ -2,8 +2,10 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import type { Incubator, Prisma } from '../generated/prisma/client.js';
+import { AnalyticsService } from '../analytics/analytics.service.js';
 import {
   currentIncubatorId,
   currentIsSuperAdmin,
@@ -61,7 +63,12 @@ export class IncubatorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly frameworks: FrameworksService,
+    @Optional() private readonly analytics?: AnalyticsService,
   ) {}
+
+  private async bumpAnalyticsCache(): Promise<void> {
+    await this.analytics?.invalidateOverviewCache();
+  }
 
   /**
    * Tenant root is not in TENANT_MODELS. Directors (and others with ALS
@@ -183,7 +190,7 @@ export class IncubatorsService {
   async create(input: CreateIncubatorInput): Promise<Incubator> {
     await this.assertInstitutionExists(input.institutionId);
     await this.frameworks.assertPublishedFramework(input.frameworkId);
-    return this.prisma.client.incubator.create({
+    const created = await this.prisma.client.incubator.create({
       data: {
         name: input.name,
         slug: input.slug,
@@ -193,6 +200,8 @@ export class IncubatorsService {
         frameworkId: input.frameworkId ?? null,
       },
     });
+    await this.bumpAnalyticsCache();
+    return created;
   }
 
   /**
@@ -238,6 +247,7 @@ export class IncubatorsService {
       throw new ConflictException('Version conflict');
     }
 
+    await this.bumpAnalyticsCache();
     return this.get(id);
   }
 
@@ -251,9 +261,11 @@ export class IncubatorsService {
         'Incubator has active incubations and cannot be deleted',
       );
     }
-    return this.prisma.client.incubator.delete({
+    const deleted = await this.prisma.client.incubator.delete({
       where: { id: row.id },
     });
+    await this.bumpAnalyticsCache();
+    return deleted;
   }
 
   async restore(id: string): Promise<Incubator> {
@@ -274,11 +286,13 @@ export class IncubatorsService {
       );
     }
 
-    return (await (
+    const restored = (await (
       this.prisma.client.incubator as typeof this.prisma.client.incubator & {
         restore: (entityId: string) => Promise<Incubator>;
       }
     ).restore(id)) as Incubator;
+    await this.bumpAnalyticsCache();
+    return restored;
   }
 
   /**
@@ -298,6 +312,7 @@ export class IncubatorsService {
     await this.prisma.base.incubator.delete({
       where: { id },
     });
+    await this.bumpAnalyticsCache();
   }
 
   /** GeoJSON FeatureCollection of active incubators with both coordinates. */

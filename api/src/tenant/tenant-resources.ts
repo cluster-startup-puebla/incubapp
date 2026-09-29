@@ -67,6 +67,16 @@ export const GLOBAL_RESOURCES = [
      */
     idor: 'scope' as const,
   },
+  {
+    model: 'Analytics' as const,
+    basePath: '/api/v1/analytics',
+    methods: ['GET'] as const,
+    /**
+     * Overview aggregate. No TENANT_MODEL. Directors scoped via ALS → 404
+     * on foreign incubator; cluster_admin/super admin may omit header.
+     */
+    idor: 'scope' as const,
+  },
 ] as const;
 
 export type TenantResource = (typeof TENANT_RESOURCES)[number];

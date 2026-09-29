@@ -3,9 +3,11 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import type { Incubation, Prisma } from '../generated/prisma/client.js';
+import { AnalyticsService } from '../analytics/analytics.service.js';
 import {
   currentIncubatorId,
   currentIsSuperAdmin,
@@ -47,7 +49,14 @@ function isIncubationStatus(value: string): value is IncubationStatus {
 
 @Injectable()
 export class IncubationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly analytics?: AnalyticsService,
+  ) {}
+
+  private async bumpAnalyticsCache(): Promise<void> {
+    await this.analytics?.invalidateOverviewCache();
+  }
 
   /**
    * Not in TENANT_MODELS. Directors (and others with ALS incubatorId) may
@@ -226,7 +235,7 @@ export class IncubationsService {
     }
 
     try {
-      return await this.prisma.client.incubation.create({
+      const created = await this.prisma.client.incubation.create({
         data: {
           incubatorId,
           status,
@@ -235,6 +244,8 @@ export class IncubationsService {
           exitReason: input.exitReason ?? null,
         },
       });
+      await this.bumpAnalyticsCache();
+      return created;
     } catch (error) {
       if (
         error &&
@@ -345,14 +356,17 @@ export class IncubationsService {
       throw error;
     }
 
+    await this.bumpAnalyticsCache();
     return this.get(id);
   }
 
   async remove(id: string): Promise<Incubation> {
     const row = await this.get(id);
-    return this.prisma.client.incubation.delete({
+    const deleted = await this.prisma.client.incubation.delete({
       where: { id: row.id },
     });
+    await this.bumpAnalyticsCache();
+    return deleted;
   }
 
   async restore(id: string): Promise<Incubation> {
@@ -376,11 +390,13 @@ export class IncubationsService {
       }
     }
 
-    return (await (
+    const restored = (await (
       this.prisma.client.incubation as typeof this.prisma.client.incubation & {
         restore: (entityId: string) => Promise<Incubation>;
       }
     ).restore(id)) as Incubation;
+    await this.bumpAnalyticsCache();
+    return restored;
   }
 
   async purge(id: string): Promise<void> {
@@ -393,5 +409,6 @@ export class IncubationsService {
     await this.prisma.base.incubation.delete({
       where: { id },
     });
+    await this.bumpAnalyticsCache();
   }
 }

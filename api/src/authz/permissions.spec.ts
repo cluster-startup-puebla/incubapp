@@ -44,6 +44,26 @@ const FRAMEWORK_READ_ONLY = {
   'framework:purge': false,
 } as const;
 
+const ANALYTICS_READER = {
+  'analytics:list': false,
+  'analytics:read': true,
+  'analytics:create': false,
+  'analytics:update': false,
+  'analytics:delete': false,
+  'analytics:restore': false,
+  'analytics:purge': false,
+} as const;
+
+const ANALYTICS_DENIED = {
+  'analytics:list': false,
+  'analytics:read': false,
+  'analytics:create': false,
+  'analytics:update': false,
+  'analytics:delete': false,
+  'analytics:restore': false,
+  'analytics:purge': false,
+} as const;
+
 const INCUBATOR_CLUSTER_ADMIN = {
   'incubator:list': true,
   'incubator:read': true,
@@ -176,6 +196,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_WRITER,
+    ...ANALYTICS_READER,
   },
   coorganizer: {
     'startup:list': true,
@@ -204,6 +225,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_WRITER,
+    ...ANALYTICS_READER,
   },
   director: {
     'startup:list': true,
@@ -232,6 +254,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_READER,
   },
   staff: {
     'startup:list': true,
@@ -260,6 +283,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_READER,
   },
   mentor: {
     'startup:list': true,
@@ -288,6 +312,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_DENIED,
   },
   founder: {
     'startup:list': true,
@@ -316,6 +341,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_DENIED,
   },
   judge: {
     'startup:list': true,
@@ -344,6 +370,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
     ...FRAMEWORK_READ_ONLY,
+    ...ANALYTICS_DENIED,
   },
 };
 
@@ -467,6 +494,17 @@ describe('permissions matrix', () => {
     expect(
       canPerform({ roles: ['founder'], permission: 'incubation:update' }),
     ).toBe(false);
+  });
+
+  it('director lee analytics overview', () => {
+    expect(roleHasPermission('director', 'analytics:read')).toBe(true);
+    expect(roleHasPermission('founder', 'analytics:read')).toBe(false);
+    expect(
+      canPerform({ roles: ['director'], permission: 'analytics:read' }),
+    ).toBe(true);
+    expect(
+      canPerform({ roles: ['cluster_admin'], permission: 'analytics:read' }),
+    ).toBe(true);
   });
 
   it('matriz completa', () => {
