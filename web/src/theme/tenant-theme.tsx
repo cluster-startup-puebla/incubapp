@@ -31,6 +31,7 @@ export function TenantTheme({
       style={brandToStyle(brand)}
       className="min-h-screen bg-background text-foreground"
     >
+      {brand?.logoUrl ? <img src={brand.logoUrl} alt="" /> : null}
       {children}
     </div>
   );

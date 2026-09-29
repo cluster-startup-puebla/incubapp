@@ -1,11 +1,11 @@
+import { loadIncubatorBrand } from './api-brand-source';
 import type { TenantBrandSource } from './brand';
 
 /**
- * Live source until an external provider (or the incubator record) supplies
- * colors. Returning null keeps the default :root palette.
+ * Live brand source: loads primary color and signed logo from the incubators API.
  */
 export const brandSource: TenantBrandSource = {
-  load() {
-    return Promise.resolve(null);
+  load(slug) {
+    return loadIncubatorBrand(slug);
   },
 };

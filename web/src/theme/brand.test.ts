@@ -15,6 +15,7 @@ const upap: TenantBrandSource = {
       slug: 'upap',
       primary: 'oklch(0.577 0.245 27.325)',
       primaryForeground: '#fff',
+      logoUrl: null,
     };
   },
 };
@@ -27,6 +28,7 @@ const buap: TenantBrandSource = {
     return {
       slug: 'buap',
       primary: 'oklch(0.488 0.243 264.376)',
+      logoUrl: null,
     };
   },
 };
@@ -37,6 +39,7 @@ describe('tenant brand', () => {
       slug: 'upap',
       primary: 'oklch(0.577 0.245 27.325)',
       primaryForeground: '#fff',
+      logoUrl: null,
     });
     assert.equal(style['--primary'], 'oklch(0.577 0.245 27.325)');
     assert.equal(style['--primary-foreground'], '#fff');
@@ -79,6 +82,7 @@ describe('tenant brand', () => {
       slug: 'upap',
       primary: 'red; background: url(https://evil)',
       accent: 'blue',
+      logoUrl: null,
     });
     assert.equal(style['--primary'], undefined);
     assert.equal(style['--accent'], 'blue');
@@ -86,6 +90,74 @@ describe('tenant brand', () => {
 
   it('uses no tenant theme when there is no slug', async () => {
     const brand = await loadTenantBrand(null, upap);
+    assert.equal(brand, null);
+  });
+
+  it('sets --primary from color and exposes logoUrl', async () => {
+    const withLogo: TenantBrandSource = {
+      async load(slug) {
+        if (slug !== 'upap') {
+          return null;
+        }
+        return {
+          slug: 'upap',
+          primary: '#C8102E',
+          logoUrl: 'https://cdn.example/upap-logo.png',
+        };
+      },
+    };
+    const brand = await loadTenantBrand('upap', withLogo);
+    assert.equal(brandToStyle(brand)['--primary'], '#C8102E');
+    assert.equal(brand?.logoUrl, 'https://cdn.example/upap-logo.png');
+  });
+
+  it('yields empty style when brandPrimary and logoUrl are null', () => {
+    const style = brandToStyle({
+      slug: 'upap',
+      logoUrl: null,
+    });
+    assert.deepEqual(style, {});
+  });
+
+  it('returns null when the provider answers 404', async () => {
+    const brand = await loadTenantBrand('missing', {
+      async load() {
+        return null;
+      },
+    });
+    assert.equal(brand, null);
+  });
+
+  it('returns null when the provider throws on lookup', async () => {
+    const brand = await loadTenantBrand('upap', {
+      async load() {
+        throw new Error('404 Not Found');
+      },
+    });
+    assert.equal(brand, null);
+  });
+
+  it('drops an invalid brandPrimary color', () => {
+    const style = brandToStyle({
+      slug: 'upap',
+      primary: 'red; background:url(https://evil)',
+      logoUrl: 'https://cdn.example/logo.png',
+    });
+    assert.equal(style['--primary'], undefined);
+    assert.equal(style['--logoUrl'], undefined);
+  });
+
+  it('ignores a mismatched slug from the provider', async () => {
+    const mismatched: TenantBrandSource = {
+      async load() {
+        return {
+          slug: 'buap',
+          primary: '#C8102E',
+          logoUrl: 'https://cdn.example/logo.png',
+        };
+      },
+    };
+    const brand = await loadTenantBrand('upap', mismatched);
     assert.equal(brand, null);
   });
 });

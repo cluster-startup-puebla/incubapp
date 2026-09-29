@@ -5,6 +5,7 @@ export type TenantBrandConfig = {
   accent?: string;
   accentForeground?: string;
   ring?: string;
+  logoUrl: string | null;
 };
 
 export type TenantBrandSource = {
