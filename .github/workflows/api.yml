@@ -1,0 +1,80 @@
+name: API
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+defaults:
+  run:
+    working-directory: api
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: incubapp
+          POSTGRES_PASSWORD: incubapp
+          POSTGRES_DB: incubapp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U incubapp -d incubapp"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://incubapp:incubapp@localhost:5432/incubapp
+      SHADOW_DATABASE_URL: postgresql://incubapp:incubapp@localhost:5432/incubapp_shadow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.build.json
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Prisma migration drift check
+        env:
+          PGPASSWORD: incubapp
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql -h localhost -U incubapp -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'incubapp_shadow'" | grep -q 1 \
+            || psql -h localhost -U incubapp -d postgres -c "CREATE DATABASE incubapp_shadow"
+          awk '/url: process.env\["DATABASE_URL"\],/ {
+            print
+            print "    shadowDatabaseUrl: process.env[\"SHADOW_DATABASE_URL\"],"
+            next
+          }1' prisma7.config.ts > prisma-ci.config.ts
+          npx prisma migrate diff \
+            --config prisma-ci.config.ts \
+            --from-migrations prisma/migrations \
+            --to-schema prisma/schema.prisma \
+            --exit-code
+
+      - name: npm audit
+        continue-on-error: true
+        run: npm audit
