@@ -155,8 +155,8 @@ describe('TENANT_RESOURCES registry', () => {
         },
         async () => startups.list(),
       );
-      expect(listA.map((row) => row.id)).not.toContain(startupBId);
-      expect(listA.every((row) => row.incubatorId === incAId)).toBe(true);
+      expect(listA.items.map((row) => row.id)).not.toContain(startupBId);
+      expect(listA.items.every((row) => row.incubatorId === incAId)).toBe(true);
     });
   },
 );

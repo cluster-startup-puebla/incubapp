@@ -501,7 +501,7 @@ Comportamiento:
 
 ### T4.1 Validación Zod global
 
-- [ ] Pipe global, objects `strict`, query con coerción explícita.
+- [x] Pipe global, objects `strict`, query con coerción explícita.
 
 **Tests** (`zod-validation.pipe.spec.ts`)
 
@@ -518,7 +518,7 @@ Comportamiento:
 
 ### T4.2 Filtro RFC 7807
 
-- [ ] `{ type, title, status, detail, instance, requestId, errors? }`. Mapa Prisma: `P2002→409`, `P2025→404`, `P2003→409`, `P2034→409`.
+- [x] `{ type, title, status, detail, instance, requestId, errors? }`. Mapa Prisma: `P2002→409`, `P2025→404`, `P2003→409`, `P2034→409`.
 
 **Tests** (`problem-details.filter.spec.ts`)
 
@@ -535,7 +535,7 @@ Comportamiento:
 
 ### T4.3 Envelope
 
-- [ ] Listas `{ data, meta }`. Recurso `{ data }`. Delete `204` sin body.
+- [x] Listas `{ data, meta }`. Recurso `{ data }`. Delete `204` sin body.
 
 **Tests** de un helper `toList` / `toResource`, no de un controller todavía.
 
@@ -549,7 +549,7 @@ Comportamiento:
 
 ### T4.4 Paginación
 
-- [ ] `page >= 1` default 1. `pageSize` 1–100 default 20. Cursor aparte, sin count.
+- [x] `page >= 1` default 1. `pageSize` 1–100 default 20. Cursor aparte, sin count.
 
 **Tests** (`pagination.spec.ts`)
 
@@ -567,7 +567,7 @@ Comportamiento:
 
 ### T4.5 Orden
 
-- [ ] `sort=-createdAt,name` con whitelist por recurso.
+- [x] `sort=-createdAt,name` con whitelist por recurso.
 
 **Tests**
 
@@ -581,7 +581,7 @@ Comportamiento:
 
 ### T4.6 Filtros
 
-- [ ] `filter[field]`, `filter[field][gte]`, `filter[field][in]`. Whitelist de campo y operador.
+- [x] `filter[field]`, `filter[field][gte]`, `filter[field][in]`. Whitelist de campo y operador.
 
 **Tests**
 
@@ -702,7 +702,7 @@ Comportamiento:
 
 ### T4.14 Scalar
 
-- [ ] Seguir en `/reference` y `/openapi.json`. Cada operación con summary y respuestas 400, 401, 403, 404, 429. En producción, `/reference` exige super admin o se apaga con env.
+- [x] Seguir en `/reference` y `/openapi.json`. Cada operación con summary y respuestas 400, 401, 403, 404, 429. En producción, `/reference` exige super admin o se apaga con env.
 
 **Tests**
 

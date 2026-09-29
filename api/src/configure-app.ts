@@ -1,7 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { apiReference } from '@scalar/nestjs-api-reference';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
+import type { Request } from 'express';
 import { resolveTrustedOrigins } from './auth/trusted-origins.js';
+import { configureApiReference } from './common/openapi/api-reference.js';
 
 /** Nest must keep the global body parser off so Better Auth can read raw bodies. */
 export const NEST_BODY_PARSER_DISABLED = false;
@@ -15,7 +17,14 @@ export function resolveCorsOrigins(
   });
 }
 
-export function configureApp(app: INestApplication): void {
+export type ConfigureAppOptions = {
+  isSuperAdmin?: (req: Request) => Promise<boolean>;
+};
+
+export function configureApp(
+  app: INestApplication,
+  options: ConfigureAppOptions = {},
+): void {
   const corsOrigins = resolveCorsOrigins();
 
   app.enableCors({
@@ -29,7 +38,7 @@ export function configureApp(app: INestApplication): void {
     .setDescription('REST resources under /api/v1')
     .setVersion('1.0')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
 
   app
     .getHttpAdapter()
@@ -40,5 +49,13 @@ export function configureApp(app: INestApplication): void {
       },
     );
 
-  app.use('/reference', apiReference({ content: document }));
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  const apiReferenceEnabled = process.env.API_REFERENCE_ENABLED !== 'false';
+
+  configureApiReference(app, {
+    document,
+    nodeEnv,
+    apiReferenceEnabled,
+    isSuperAdmin: options.isSuperAdmin ?? (() => Promise.resolve(false)),
+  });
 }

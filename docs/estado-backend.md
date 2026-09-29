@@ -6,7 +6,25 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T3 cerrado en este checkpoint**. Siguiente: **T4.1–T4.6 y T4.14**. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`. T2.8 y T3.6 no implementados a propósito.
+Etapa activa: **T4.1–T4.6 y T4.14 cerrados en este checkpoint**. Siguiente: receta en `institutions`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T4
+
+| Tarea | Estado | Notas |
+|-------|--------|-------|
+| T4.1 Validación Zod | hecho | `ZodValidationPipe` global + `createZodDto` / `nestjs-zod`; objects `strict`; write DTOs sin `id`/`deletedAt`/`createdById`/`incubatorId` |
+| T4.2 RFC 7807 | hecho | `ProblemDetailsFilter` solo `/api/v1`; Prisma P2002/P2025/P2003/P2034; 500 sin secretos; `/api/auth` intacto |
+| T4.3 Envelope | hecho | Un `EnvelopeInterceptor` + helpers `toList`/`toResource`; health excluido; deletes 204 |
+| T4.4 Paginación | hecho | Offset + cursor helpers; page/pageSize defaults; sin `total` en cursor; no offset para audit/metrics |
+| T4.5 Orden | hecho | `parseSort` con whitelist; default `createdAt` desc; rechaza relaciones |
+| T4.6 Filtros | hecho | `parseFilters` → Prisma where parametrizado; ops + `in` máx 200 |
+| T4.7–T4.13 | no | Fuera de este corte |
+| T4.14 Scalar/OpenAPI | hecho | `/reference` + `/openapi.json`; `ApiStandardErrors`; prod exige super admin o `API_REFERENCE_ENABLED=false`; `npm run openapi:check` en CI |
+| T4.15 Storage | no | Fuera de este corte |
+
+Startups list/get/create/update usan pipe + envelope + query helpers. Sessions list usa envelope de lista. Health sigue `{ status: 'ok', ... }` sin envelope.
+
+Verificación del padre: **163** tests, lint 0 errores, typecheck y `openapi:check` ok. En vivo: health sigue `{"status":"ok"}`, `GET /api/v1/sessions` sin cookie es 401 problem+json con `requestId`, `page=abc` es 400 con error en `page`, y el listado autenticado de sesiones es `{ data, meta }` sin token. El filtro se registra con `useFactory` para que Nest no intente inyectar `String`.
 
 ## Hecho en T3
 
@@ -40,11 +58,9 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T4.1–T4.6 y T4.14. No implementar T4.7–T4.13 ni T4.15 hasta que un recurso los necesite. No implementar T3.6 ni T2.8.
+Receta CRUD en `institutions` (T6.2, R1–R12). Ahí sí entran If-Match, audit log y rate limit de escrituras. No implementar T3.6 ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
-
-Quedó sin prueba e2e HTTP completa de startups (la suite anti-IDOR usa service + Postgres). Sesiones de un user sin membresía ni super admin reciben 403 del tenant resolver.
 
 ## Hecho en T1
 
@@ -71,12 +87,12 @@ Commit `653ee3b`. Health `GET /api/v1/health`, readiness con Postgres y Redis, t
 
 ## Fuera del corte (no implementar)
 
-T2.8, T3.6 hasta decidir, T6.8, T6.9 hasta decidir, T6.11 completo, T6.13–T6.16, T6.18, T7.2, T7.4, T8.
+T2.8, T3.6 hasta decidir, T4.7–T4.13, T4.15, T6.8, T6.9 hasta decidir, T6.11 completo, T6.13–T6.16, T6.18, T7.2, T7.4, T8.
 
 ## Cómo retomar
 
 1. Leer este archivo.
-2. Leer T3.6 / T4 del plan (o cerrar commit de T3.1–T3.5).
+2. Leer T4.7+ del plan o cerrar commit de T4.1–T4.6 + T4.14.
 3. No correr `nest new`. No mover `/api/auth` ni `GET /api/v1/health`.
 4. No commitear `.env`.
 5. `createdById` sigue siendo `String` (id de Better Auth), no UUID.
