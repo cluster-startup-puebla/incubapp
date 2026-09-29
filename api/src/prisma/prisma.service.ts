@@ -4,6 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
+import type { PrismaClient } from '../generated/prisma/client.js';
 import {
   baseClient,
   prisma,
@@ -15,6 +16,8 @@ import {
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
   readonly client: ExtendedPrismaClient = prisma;
+  /** Unextended client for physical purge (bypasses soft-delete). */
+  readonly base: PrismaClient = baseClient;
 
   constructor() {
     subscribeSlowQueryLog(baseClient, this.logger);

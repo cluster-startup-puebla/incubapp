@@ -5,11 +5,15 @@ import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { validateEnv } from './config/env.schema.js';
 import { auth } from './auth.js';
 import { AuthzModule } from './authz/authz.module.js';
+import { AuditModule } from './audit/audit.module.js';
 import { RequestContextInterceptor } from './auth/request-context.interceptor.js';
 import { EnvelopeInterceptor } from './common/http/envelope.interceptor.js';
 import { ProblemDetailsFilter } from './common/http/problem-details.filter.js';
 import { ZodValidationPipe } from './common/validation/zod-validation.pipe.js';
+import { WriteRateLimitModule } from './common/throttle/write-rate-limit.module.js';
+import { WriteRateLimitGuard } from './common/throttle/write-rate-limit.guard.js';
 import { HealthModule } from './health/health.module.js';
+import { InstitutionsModule } from './institutions/institutions.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { MembershipModule } from './membership/membership.module.js';
 import { MinioModule } from './storage/minio.module.js';
@@ -29,6 +33,8 @@ import { TenantContextGuard } from './tenant/tenant-context.guard.js';
     MailModule,
     MembershipModule,
     AuthzModule,
+    AuditModule,
+    WriteRateLimitModule,
     AuthModule.forRoot({
       auth,
       disableTrustedOriginsCors: true,
@@ -36,11 +42,16 @@ import { TenantContextGuard } from './tenant/tenant-context.guard.js';
     HealthModule,
     SessionsModule,
     StartupsModule,
+    InstitutionsModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: TenantContextGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useExisting: WriteRateLimitGuard,
     },
     {
       provide: APP_PIPE,

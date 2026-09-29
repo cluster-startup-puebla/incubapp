@@ -1,7 +1,11 @@
 import 'dotenv/config';
 import { NotFoundException } from '@nestjs/common';
 import { TENANT_MODELS } from '../prisma/soft-delete.extension.js';
-import { TENANT_RESOURCES } from './tenant-resources.js';
+import {
+  GLOBAL_RESOURCES,
+  HTTP_RESOURCES,
+  TENANT_RESOURCES,
+} from './tenant-resources.js';
 import { runWithRequestContext } from '../context/request-context.js';
 import { StartupsService } from '../startups/startups.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
@@ -22,6 +26,14 @@ describe('TENANT_RESOURCES registry', () => {
         expect.arrayContaining(['GET', 'PATCH', 'DELETE']),
       );
     }
+  });
+
+  it('institution es global permission-based (no TENANT_MODEL)', () => {
+    expect(TENANT_MODELS).not.toContain('Institution');
+    const institution = GLOBAL_RESOURCES.find((r) => r.model === 'Institution');
+    expect(institution).toBeDefined();
+    expect(institution?.idor).toBe('permission');
+    expect(HTTP_RESOURCES.some((r) => r.model === 'Institution')).toBe(true);
   });
 });
 

@@ -10,13 +10,22 @@ import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { assertOpenApiContract } from '../src/common/openapi/openapi-contract.js';
 import { HealthController } from '../src/health/health.controller.js';
 import { HealthService } from '../src/health/health.service.js';
+import { InstitutionsController } from '../src/institutions/institutions.controller.js';
+import { InstitutionsService } from '../src/institutions/institutions.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
 import { SessionsService } from '../src/sessions/sessions.service.js';
 import { StartupsController } from '../src/startups/startups.controller.js';
 import { StartupsService } from '../src/startups/startups.service.js';
+import { AuditLogInterceptor } from '../src/audit/audit-log.interceptor.js';
+import { AuditLogService } from '../src/audit/audit-log.service.js';
 
 @Module({
-  controllers: [HealthController, SessionsController, StartupsController],
+  controllers: [
+    HealthController,
+    SessionsController,
+    StartupsController,
+    InstitutionsController,
+  ],
   providers: [
     {
       provide: HealthService,
@@ -48,6 +57,25 @@ import { StartupsService } from '../src/startups/startups.service.js';
         remove: async () => ({}),
       },
     },
+    {
+      provide: InstitutionsService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        listDeleted: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
+        getWithDeleted: async () => ({}),
+        create: async () => ({}),
+        update: async () => ({}),
+        remove: async () => ({}),
+        restore: async () => ({}),
+        purge: async () => undefined,
+      },
+    },
+    {
+      provide: AuditLogService,
+      useValue: { record: async () => undefined },
+    },
+    AuditLogInterceptor,
   ],
 })
 class OpenApiCheckModule {}

@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuthGuard, AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import { HealthController } from '../health/health.controller.js';
+import { InstitutionsController } from '../institutions/institutions.controller.js';
 import { SessionsController } from '../sessions/sessions.controller.js';
 import { StartupsController } from '../startups/startups.controller.js';
 
@@ -41,6 +42,11 @@ const CONTROLLER_INVENTORY: Array<{
   { name: 'HealthController', type: HealthController, anonymous: true },
   { name: 'SessionsController', type: SessionsController, anonymous: false },
   { name: 'StartupsController', type: StartupsController, anonymous: false },
+  {
+    name: 'InstitutionsController',
+    type: InstitutionsController,
+    anonymous: false,
+  },
 ];
 
 function hasAllowAnonymous(

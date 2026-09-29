@@ -88,9 +88,27 @@ model Institution {
 
   name        String
   countryCode String    @map("country_code") @db.Char(2)
+  website     String?
   incubators  Incubator[]
 
   @@map("institution")
+}
+
+/// Append-only write audit (T4.11). Not soft-deleted.
+model AuditLog {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  actorId    String?  @map("actor_id")
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  before     Json?
+  after      Json?
+  requestId  String?  @map("request_id")
+
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@map("audit_log")
 }
 
 enum MembershipScopeType {

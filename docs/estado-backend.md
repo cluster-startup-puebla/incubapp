@@ -6,7 +6,25 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T4.1–T4.6 y T4.14 cerrados en este checkpoint**. Siguiente: receta en `institutions`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.2 institutions cerrado en este checkpoint**. Siguiente: T6.1 `geo-units`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T5 / T6.2 (`institutions`)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| R1–R8 CRUD | hecho | create/list/get/update/delete/restore/trash/purge; deletes 204; Location en create; envelope via `toList`/`toResource` |
+| R4 If-Match | hecho | sin header → 428; stale → 409; where `{ id, version }` + increment |
+| R2 `q` | hecho | min 2, escape `%`/`_`, contains CI; sin migración GIN/unaccent |
+| R9 Audit | hecho | tabla `audit_log` + interceptor en institutions (POST/PATCH/DELETE/restore/purge); secrets strip; fallo no escribe |
+| R10 OpenAPI | hecho | operations con summary + ApiStandardErrors; `openapi:check` verde |
+| R11 IDOR | hecho | Institution en `GLOBAL_RESOURCES` (`idor: permission`); **no** en `TENANT_MODELS` |
+| R12 write rate | hecho | 30 writes/min por user; 429 + Retry-After; Redis fail-open; health skip |
+| T6.2 extras | hecho | unique name×country; mismo nombre otro país; recreate tras soft-delete; delete con incubadora activa → 409; website URL |
+| Permisos | hecho | `restore`/`purge` en matriz; purge solo super admin (bypass); institutions sin `@RequiresTenant()` |
+
+Migración: `20260929072225_institution_website_audit_log` (`website` + `audit_log`). `Incubator.institutionId` ya existía.
+
+Verificación del padre: **222** tests al repetir la suite, lint 0 errores, `openapi:check` y `db:check-uniques` ok. En vivo: health `{"status":"ok"}`, `GET /api/v1/institutions` sin cookie 401, con admin 200 `{ data, meta }`.
 
 ## Hecho en T4
 
@@ -18,13 +36,18 @@ Etapa activa: **T4.1–T4.6 y T4.14 cerrados en este checkpoint**. Siguiente: re
 | T4.4 Paginación | hecho | Offset + cursor helpers; page/pageSize defaults; sin `total` en cursor; no offset para audit/metrics |
 | T4.5 Orden | hecho | `parseSort` con whitelist; default `createdAt` desc; rechaza relaciones |
 | T4.6 Filtros | hecho | `parseFilters` → Prisma where parametrizado; ops + `in` máx 200 |
-| T4.7–T4.13 | no | Fuera de este corte |
+| T4.7 Búsqueda | parcial | helper `q` en institutions; sin GIN/unaccent |
+| T4.8 Rate limit writes | parcial | slice de writes 30/min (R12); no throttler global 100/min ni búsqueda 60/min |
+| T4.9–T4.10 | no | Fuera de este corte |
+| T4.11 Audit log | hecho | scoped a institutions (R9) |
+| T4.12 If-Match | hecho | scoped a institutions (R4) |
+| T4.13 Idempotencia | no | Fuera de este corte |
 | T4.14 Scalar/OpenAPI | hecho | `/reference` + `/openapi.json`; `ApiStandardErrors`; prod exige super admin o `API_REFERENCE_ENABLED=false`; `npm run openapi:check` en CI |
 | T4.15 Storage | no | Fuera de este corte |
 
 Startups list/get/create/update usan pipe + envelope + query helpers. Sessions list usa envelope de lista. Health sigue `{ status: 'ok', ... }` sin envelope.
 
-Verificación del padre: **163** tests, lint 0 errores, typecheck y `openapi:check` ok. En vivo: health sigue `{"status":"ok"}`, `GET /api/v1/sessions` sin cookie es 401 problem+json con `requestId`, `page=abc` es 400 con error en `page`, y el listado autenticado de sesiones es `{ data, meta }` sin token. El filtro se registra con `useFactory` para que Nest no intente inyectar `String`.
+Verificación del padre (pre-institutions): **163** tests. Post-receta: **222**.
 
 ## Hecho en T3
 
@@ -58,7 +81,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-Receta CRUD en `institutions` (T6.2, R1–R12). Ahí sí entran If-Match, audit log y rate limit de escrituras. No implementar T3.6 ni T2.8.
+T6.1 `geo-units` (lectura con sesión, escritura solo super admin). No implementar T3.6 ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 
@@ -87,12 +110,12 @@ Commit `653ee3b`. Health `GET /api/v1/health`, readiness con Postgres y Redis, t
 
 ## Fuera del corte (no implementar)
 
-T2.8, T3.6 hasta decidir, T4.7–T4.13, T4.15, T6.8, T6.9 hasta decidir, T6.11 completo, T6.13–T6.16, T6.18, T7.2, T7.4, T8.
+T2.8, T3.6 hasta decidir, T4.9–T4.10, T4.13, T4.15, T6.1, T6.3–T6.18 (salvo T6.2), T7.2, T7.4, T8.
 
 ## Cómo retomar
 
 1. Leer este archivo.
-2. Leer T4.7+ del plan o cerrar commit de T4.1–T4.6 + T4.14.
+2. Copiar la receta de `institutions` al siguiente recurso (T6.1 / T6.3 / T6.4).
 3. No correr `nest new`. No mover `/api/auth` ni `GET /api/v1/health`.
 4. No commitear `.env`.
 5. `createdById` sigue siendo `String` (id de Better Auth), no UUID.

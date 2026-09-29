@@ -18,7 +18,15 @@ export type Role = (typeof ROLES)[number];
 export const RESOURCES = ['startup', 'institution', 'membership'] as const;
 export type Resource = (typeof RESOURCES)[number];
 
-export const ACTIONS = ['list', 'read', 'create', 'update', 'delete'] as const;
+export const ACTIONS = [
+  'list',
+  'read',
+  'create',
+  'update',
+  'delete',
+  'restore',
+  'purge',
+] as const;
 export type Action = (typeof ACTIONS)[number];
 
 export type Permission = `${Resource}:${Action}`;
@@ -35,16 +43,22 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': true,
+    'startup:restore': true,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': true,
     'institution:update': true,
     'institution:delete': true,
+    'institution:restore': true,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
     'membership:update': true,
     'membership:delete': true,
+    'membership:restore': true,
+    'membership:purge': false,
   },
   coorganizer: {
     'startup:list': true,
@@ -52,16 +66,22 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': true,
+    'startup:restore': true,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': true,
     'institution:update': true,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
     'membership:update': true,
     'membership:delete': true,
+    'membership:restore': true,
+    'membership:purge': false,
   },
   director: {
     'startup:list': true,
@@ -69,16 +89,22 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': true,
+    'startup:restore': true,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
     'membership:update': true,
     'membership:delete': true,
+    'membership:restore': true,
+    'membership:purge': false,
   },
   staff: {
     'startup:list': true,
@@ -86,16 +112,22 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
   mentor: {
     'startup:list': true,
@@ -103,16 +135,22 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': false,
     'startup:update': true,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
   founder: {
     'startup:list': true,
@@ -120,16 +158,22 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
   judge: {
     'startup:list': true,
@@ -137,16 +181,22 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': false,
     'startup:update': false,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
 };
 
@@ -181,6 +231,7 @@ export type CanPerformInput = {
 /**
  * Matrix lookup plus ownership policy for founder.
  * Ownership is not encoded as `if (role === 'director')` — only founder ownership.
+ * Super admin bypasses the matrix (including purge).
  */
 export function canPerform(input: CanPerformInput): boolean {
   if (input.isSuperAdmin) {
@@ -193,7 +244,8 @@ export function canPerform(input: CanPerformInput): boolean {
 
   const isOwnerScoped =
     input.permission === 'startup:update' ||
-    input.permission === 'startup:delete';
+    input.permission === 'startup:delete' ||
+    input.permission === 'startup:restore';
 
   if (
     isOwnerScoped &&

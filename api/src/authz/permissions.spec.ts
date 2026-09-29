@@ -25,16 +25,22 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': true,
+    'startup:restore': true,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': true,
     'institution:update': true,
     'institution:delete': true,
+    'institution:restore': true,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
     'membership:update': true,
     'membership:delete': true,
+    'membership:restore': true,
+    'membership:purge': false,
   },
   coorganizer: {
     'startup:list': true,
@@ -42,16 +48,22 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': true,
+    'startup:restore': true,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': true,
     'institution:update': true,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
     'membership:update': true,
     'membership:delete': true,
+    'membership:restore': true,
+    'membership:purge': false,
   },
   director: {
     'startup:list': true,
@@ -59,16 +71,22 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': true,
+    'startup:restore': true,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
     'membership:update': true,
     'membership:delete': true,
+    'membership:restore': true,
+    'membership:purge': false,
   },
   staff: {
     'startup:list': true,
@@ -76,16 +94,22 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': true,
     'membership:read': true,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
   mentor: {
     'startup:list': true,
@@ -93,16 +117,22 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': false,
     'startup:update': true,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
   founder: {
     'startup:list': true,
@@ -110,16 +140,22 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': true,
     'startup:update': true,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
   judge: {
     'startup:list': true,
@@ -127,16 +163,22 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'startup:create': false,
     'startup:update': false,
     'startup:delete': false,
+    'startup:restore': false,
+    'startup:purge': false,
     'institution:list': true,
     'institution:read': true,
     'institution:create': false,
     'institution:update': false,
     'institution:delete': false,
+    'institution:restore': false,
+    'institution:purge': false,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
     'membership:update': false,
     'membership:delete': false,
+    'membership:restore': false,
+    'membership:purge': false,
   },
 };
 
@@ -156,9 +198,7 @@ describe('permissions matrix', () => {
   });
 
   it('founder edita ajena', () => {
-    // Role has startup:update in the abstract matrix…
     expect(roleHasPermission('founder', 'startup:update')).toBe(true);
-    // …but ownership policy denies someone else's startup.
     expect(
       canPerform({
         roles: ['founder'],
@@ -177,6 +217,23 @@ describe('permissions matrix', () => {
     ).toBe(true);
   });
 
+  it('purge solo super admin', () => {
+    expect(roleHasPermission('cluster_admin', 'institution:purge')).toBe(false);
+    expect(
+      canPerform({
+        roles: ['cluster_admin'],
+        permission: 'institution:purge',
+      }),
+    ).toBe(false);
+    expect(
+      canPerform({
+        roles: [],
+        permission: 'institution:purge',
+        isSuperAdmin: true,
+      }),
+    ).toBe(true);
+  });
+
   it('matriz completa', () => {
     for (const role of ROLES) {
       expect(EXPECTED_MATRIX[role]).toBeDefined();
@@ -190,7 +247,6 @@ describe('permissions matrix', () => {
       }
     }
 
-    // Fail if PERMISSION_MATRIX gained a cell with no expected value.
     for (const role of Object.keys(PERMISSION_MATRIX) as Role[]) {
       expect(EXPECTED_MATRIX[role]).toBeDefined();
       for (const key of Object.keys(PERMISSION_MATRIX[role]) as Permission[]) {
