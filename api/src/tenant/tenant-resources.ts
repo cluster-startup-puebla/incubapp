@@ -40,6 +40,16 @@ export const GLOBAL_RESOURCES = [
      */
     idor: 'scope' as const,
   },
+  {
+    model: 'Membership' as const,
+    basePath: '/api/v1/memberships',
+    methods: ['GET', 'DELETE'] as const,
+    /**
+     * Cross-scope access for directors enforced in MembershipsHttpService
+     * via ALS incubatorId → 404.
+     */
+    idor: 'scope' as const,
+  },
 ] as const;
 
 export type TenantResource = (typeof TENANT_RESOURCES)[number];

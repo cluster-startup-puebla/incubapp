@@ -23,6 +23,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { SessionsModule } from './sessions/sessions.module.js';
 import { StartupsModule } from './startups/startups.module.js';
 import { TenantContextGuard } from './tenant/tenant-context.guard.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { TenantContextGuard } from './tenant/tenant-context.guard.js';
     InstitutionsModule,
     IncubatorsModule,
     GeoUnitsModule,
+    UsersModule,
   ],
   providers: [
     {

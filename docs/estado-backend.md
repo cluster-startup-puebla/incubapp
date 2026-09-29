@@ -6,7 +6,25 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.3 incubators cerrado en este checkpoint**. Siguiente: T6.4 users/memberships. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.4 users/memberships cerrado en este checkpoint**. Siguiente: T6.5 frameworks. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.4 (`users` / `memberships`)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Invite nuevo email | hecho | `signUpEmail` (password random no logueado) + membership + token |
+| Invite existente | hecho | no duplica user; sí agrega membership |
+| Escalada | hecho | director → `cluster_admin` = 403; incubadora ajena = **404** |
+| Último director | hecho | soft-delete del único director activo → 409 |
+| Invitación vencida | hecho | `expiresAt` pasado → 410 Gone en accept |
+| Token ajeno | hecho | token de otra invitación → 403; no acepta |
+| HTTP | hecho | `/api/v1/memberships` (list/get/invite/accept/delete) + `/api/v1/users` (list/get) |
+| Permisos | hecho | recurso `user` en matriz; membership cells existentes; controllers protected |
+| OpenAPI | hecho | controllers en `openapi-check.ts`; 30 paths |
+
+Migración: `20260929075028_membership_invitation` (`membership_invitation`).
+
+Verificación del padre: **308** tests, lint 0 errores, `openapi:check` (30 paths) y `db:check-uniques` ok. El arranque fallaba porque `MembershipModule` no importaba `AuditModule`; ya importa. En vivo: invite nuevo 201 con token, segundo invite del mismo email reutiliza el user.
 
 ## Hecho en T6.3 (`incubators`)
 
@@ -114,7 +132,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.4 `users` / `memberships`. No implementar T3.6 ni T2.8.
+T6.5 `frameworks` / stages / milestones (mínimo POC). No implementar T3.6 ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 
@@ -143,12 +161,12 @@ Commit `653ee3b`. Health `GET /api/v1/health`, readiness con Postgres y Redis, t
 
 ## Fuera del corte (no implementar)
 
-T2.8, T3.6 hasta decidir, T4.9–T4.10, T4.13, T4.15, T6.4–T6.18, T7.2, T7.4, T8.
+T2.8, T3.6 hasta decidir, T4.9–T4.10, T4.13, T4.15, T6.5–T6.18, T7.2, T7.4, T8.
 
 ## Cómo retomar
 
 1. Leer este archivo.
-2. Copiar la receta de `institutions` / `incubators` al siguiente recurso (T6.4).
+2. Copiar la receta de `institutions` / `incubators` / `memberships` al siguiente recurso (T6.5).
 3. No correr `nest new`. No mover `/api/auth` ni `GET /api/v1/health`.
 4. No commitear `.env`.
 5. `createdById` sigue siendo `String` (id de Better Auth), no UUID.

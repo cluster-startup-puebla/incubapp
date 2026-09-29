@@ -10,8 +10,10 @@ import { GeoUnitsController } from '../geo-units/geo-units.controller.js';
 import { HealthController } from '../health/health.controller.js';
 import { IncubatorsController } from '../incubators/incubators.controller.js';
 import { InstitutionsController } from '../institutions/institutions.controller.js';
+import { MembershipsController } from '../membership/memberships.controller.js';
 import { SessionsController } from '../sessions/sessions.controller.js';
 import { StartupsController } from '../startups/startups.controller.js';
+import { UsersController } from '../users/users.controller.js';
 
 @AllowAnonymous()
 @Controller('fixture-public')
@@ -57,6 +59,16 @@ const CONTROLLER_INVENTORY: Array<{
   {
     name: 'GeoUnitsController',
     type: GeoUnitsController,
+    anonymous: false,
+  },
+  {
+    name: 'MembershipsController',
+    type: MembershipsController,
+    anonymous: false,
+  },
+  {
+    name: 'UsersController',
+    type: UsersController,
     anonymous: false,
   },
 ];

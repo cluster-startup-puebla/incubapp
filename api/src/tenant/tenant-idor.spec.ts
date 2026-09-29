@@ -51,6 +51,14 @@ describe('TENANT_RESOURCES registry', () => {
     expect(incubator?.idor).toBe('scope');
     expect(HTTP_RESOURCES.some((r) => r.model === 'Incubator')).toBe(true);
   });
+
+  it('membership es scope-based (no TENANT_MODEL)', () => {
+    expect(TENANT_MODELS).not.toContain('Membership');
+    const membership = GLOBAL_RESOURCES.find((r) => r.model === 'Membership');
+    expect(membership).toBeDefined();
+    expect(membership?.idor).toBe('scope');
+    expect(HTTP_RESOURCES.some((r) => r.model === 'Membership')).toBe(true);
+  });
 });
 
 (hasDatabase ? describe : describe.skip)(

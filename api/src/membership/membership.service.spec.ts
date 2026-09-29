@@ -68,13 +68,33 @@ function createMembershipPrismaMock() {
           rows.push(row);
           return Promise.resolve(row);
         },
-        findMany(args?: { where?: { userId?: string } }) {
+        findMany(args?: {
+          where?: {
+            userId?: string;
+            scopeType?: string;
+            scopeId?: string;
+            role?: string;
+          };
+        }) {
           return Promise.resolve(
             rows.filter((row) => {
               if (row.deletedAt !== null) {
                 return false;
               }
-              if (args?.where?.userId && row.userId !== args.where.userId) {
+              const where = args?.where;
+              if (!where) {
+                return true;
+              }
+              if (where.userId && row.userId !== where.userId) {
+                return false;
+              }
+              if (where.scopeType && row.scopeType !== where.scopeType) {
+                return false;
+              }
+              if (where.scopeId && row.scopeId !== where.scopeId) {
+                return false;
+              }
+              if (where.role && row.role !== where.role) {
                 return false;
               }
               return true;
@@ -192,5 +212,35 @@ describe('MembershipService', () => {
     await expect(service.softDelete('missing')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('countActiveByScopeRole', async () => {
+    const { prisma } = createMembershipPrismaMock();
+    const service = new MembershipService(prisma);
+    await service.create({
+      userId: 'd1',
+      scopeType: 'incubator',
+      scopeId: incubatorId,
+      role: 'director',
+    });
+    await service.create({
+      userId: 'd2',
+      scopeType: 'incubator',
+      scopeId: incubatorId,
+      role: 'director',
+    });
+    await service.create({
+      userId: 's1',
+      scopeType: 'incubator',
+      scopeId: incubatorId,
+      role: 'staff',
+    });
+    expect(
+      await service.countActiveByScopeRole(
+        'incubator',
+        incubatorId,
+        'director',
+      ),
+    ).toBe(2);
   });
 });

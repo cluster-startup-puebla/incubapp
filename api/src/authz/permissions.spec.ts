@@ -74,6 +74,26 @@ const INCUBATOR_READ_ONLY = {
   'incubator:purge': false,
 } as const;
 
+const USER_MANAGER = {
+  'user:list': true,
+  'user:read': true,
+  'user:create': false,
+  'user:update': false,
+  'user:delete': false,
+  'user:restore': false,
+  'user:purge': false,
+} as const;
+
+const USER_DENIED = {
+  'user:list': false,
+  'user:read': false,
+  'user:create': false,
+  'user:update': false,
+  'user:delete': false,
+  'user:restore': false,
+  'user:purge': false,
+} as const;
+
 /**
  * Documented expected matrix: every role × resource:action cell must appear.
  * Adding a role/action without an entry here fails `matriz completa`.
@@ -102,6 +122,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   coorganizer: {
@@ -127,6 +148,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   director: {
@@ -152,6 +174,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   staff: {
@@ -177,6 +200,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   mentor: {
@@ -202,6 +226,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
   },
   founder: {
@@ -227,6 +252,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
   },
   judge: {
@@ -252,6 +278,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
   },
 };

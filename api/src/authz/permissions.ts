@@ -20,6 +20,7 @@ export const RESOURCES = [
   'institution',
   'incubator',
   'membership',
+  'user',
   'geo-unit',
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
@@ -40,6 +41,27 @@ export type Permission = `${Resource}:${Action}`;
 export function permissionKey(resource: Resource, action: Action): Permission {
   return `${resource}:${action}`;
 }
+
+/** Users: managers list/read; no direct create (invite via membership). */
+const USER_MANAGER = {
+  'user:list': true,
+  'user:read': true,
+  'user:create': false,
+  'user:update': false,
+  'user:delete': false,
+  'user:restore': false,
+  'user:purge': false,
+} as const;
+
+const USER_DENIED = {
+  'user:list': false,
+  'user:read': false,
+  'user:create': false,
+  'user:update': false,
+  'user:delete': false,
+  'user:restore': false,
+  'user:purge': false,
+} as const;
 
 /** Read/list for every authenticated role; writes only via isSuperAdmin bypass. */
 const GEO_UNIT_READ_ONLY = {
@@ -128,6 +150,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   coorganizer: {
@@ -153,6 +176,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   director: {
@@ -178,6 +202,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   staff: {
@@ -203,6 +228,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_MANAGER,
     ...GEO_UNIT_READ_ONLY,
   },
   mentor: {
@@ -228,6 +254,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
   },
   founder: {
@@ -253,6 +280,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
   },
   judge: {
@@ -278,6 +306,7 @@ export const PERMISSION_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...USER_DENIED,
     ...GEO_UNIT_READ_ONLY,
   },
 };

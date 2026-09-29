@@ -83,6 +83,28 @@ export class MembershipService {
     return rows.filter((row) => isMembershipActive(row, now));
   }
 
+  async get(id: string): Promise<Membership> {
+    const row = await this.prisma.client.membership.findFirst({
+      where: { id },
+    });
+    if (!row) {
+      throw new NotFoundException('Membership not found');
+    }
+    return row;
+  }
+
+  async countActiveByScopeRole(
+    scopeType: MembershipScopeType,
+    scopeId: string,
+    role: MembershipRole,
+    now: Date = new Date(),
+  ): Promise<number> {
+    const rows = await this.prisma.client.membership.findMany({
+      where: { scopeType, scopeId, role },
+    });
+    return rows.filter((row) => isMembershipActive(row, now)).length;
+  }
+
   async softDelete(id: string): Promise<Membership> {
     const existing = await this.prisma.client.membership.findFirst({
       where: { id },

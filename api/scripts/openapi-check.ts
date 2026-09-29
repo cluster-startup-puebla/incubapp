@@ -16,10 +16,14 @@ import { IncubatorsController } from '../src/incubators/incubators.controller.js
 import { IncubatorsService } from '../src/incubators/incubators.service.js';
 import { InstitutionsController } from '../src/institutions/institutions.controller.js';
 import { InstitutionsService } from '../src/institutions/institutions.service.js';
+import { MembershipsController } from '../src/membership/memberships.controller.js';
+import { MembershipsHttpService } from '../src/membership/memberships-http.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
 import { SessionsService } from '../src/sessions/sessions.service.js';
 import { StartupsController } from '../src/startups/startups.controller.js';
 import { StartupsService } from '../src/startups/startups.service.js';
+import { UsersController } from '../src/users/users.controller.js';
+import { UsersService } from '../src/users/users.service.js';
 import { AuditLogInterceptor } from '../src/audit/audit-log.interceptor.js';
 import { AuditLogService } from '../src/audit/audit-log.service.js';
 
@@ -31,6 +35,8 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
     InstitutionsController,
     GeoUnitsController,
     IncubatorsController,
+    MembershipsController,
+    UsersController,
   ],
   providers: [
     {
@@ -105,6 +111,23 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
         restore: async () => ({}),
         purge: async () => undefined,
         mapFeatures: async () => ({ type: 'FeatureCollection', features: [] }),
+      },
+    },
+    {
+      provide: MembershipsHttpService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
+        invite: async () => ({}),
+        acceptInvitation: async () => ({}),
+        remove: async () => ({}),
+      },
+    },
+    {
+      provide: UsersService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
       },
     },
     {

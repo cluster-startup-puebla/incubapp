@@ -22,6 +22,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   memberships   Membership[]
+  invitations   MembershipInvitation[]
 
   @@unique([email])
   @@map("user")
@@ -144,10 +145,34 @@ model Membership {
   role       MembershipRole
   validFrom  DateTime           @map("valid_from")
   validTo    DateTime?          @map("valid_to")
+  invitations MembershipInvitation[]
 
   @@index([userId])
   @@index([scopeType, scopeId])
   @@map("membership")
+}
+
+/// Invitation issued with a one-time token (T6.4). Not soft-deleted.
+model MembershipInvitation {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  email        String
+  tokenHash    String              @map("token_hash")
+  role         MembershipRole
+  scopeType    MembershipScopeType @map("scope_type")
+  scopeId      String              @map("scope_id") @db.Uuid
+  membershipId String              @map("membership_id") @db.Uuid
+  membership   Membership          @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  invitedById  String?             @map("invited_by_id")
+  invitedBy    User?               @relation(fields: [invitedById], references: [id], onDelete: SetNull)
+  expiresAt    DateTime            @map("expires_at")
+  acceptedAt   DateTime?           @map("accepted_at")
+
+  @@index([tokenHash])
+  @@index([email])
+  @@index([membershipId])
+  @@map("membership_invitation")
 }
 
 /// @business — tenant root (no incubatorId column)
