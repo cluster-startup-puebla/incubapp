@@ -1018,6 +1018,75 @@ Contadores de latencia, 4xx, 5xx, 429. Unit del interceptor: una request 429 inc
 
 ---
 
+## Marca de incubadora
+
+No estaba en el corte del POC. La incubadora no guarda logo ni color. El front ya tiene tokens (`--primary`) y un proveedor que hoy responde vacío (`web/src/theme/brand-source.ts`). Esta sección es la fuente de esa config.
+
+Contrato:
+
+- `brandPrimary` es un color CSS (`#rgb`, `#rrggbb`, `oklch()`, `rgb()`, `hsl()` o un nombre como `red`). Vacío o inválido → 400. `null` borra la marca y el portal vuelve a la paleta neutra.
+- `logoKey` es la llave en MinIO, nunca una URL pública permanente. El GET de la incubadora agrega `logoUrl` firmada (la misma expiración de `ObjectStorage.signedGet`). La llave no se acepta en el JSON de create/update: el logo entra por upload.
+- `POST /api/v1/incubators/:id/logo` con `multipart/form-data`, campo `file`. Tipos `image/png`, `image/jpeg`, `image/webp`. Máximo 1 MB. Otro tipo o más peso → 400 y no se escribe el objeto.
+- Reemplazar el logo borra el objeto anterior. Quitar el logo (`DELETE /api/v1/incubators/:id/logo`) pone `logoKey` en null y borra el objeto.
+- Permiso: quien puede `incubator:update`. Un director edita la suya. Otra incubadora → 404. Staff puede editar la ficha, así que también la marca. Founder no.
+- `If-Match` sigue aplicando al PATCH de `brandPrimary` y al upload, igual que el resto de la ficha.
+
+### T6.3b Columnas y validación
+
+- [ ] Migración `incubator_brand`: `brand_primary` text null, `logo_key` text null. Sin `@@unique`.
+
+**Archivos**
+
+- Modify: `api/prisma/schema.prisma` modelo `Incubator`
+- Create: `api/prisma/migrations/<timestamp>_incubator_brand/migration.sql`
+- Modify: `api/src/incubators/incubator.dto.ts`
+
+```ts
+const brandPrimary = z
+  .string()
+  .regex(
+    /^(#[0-9a-fA-F]{3,8}|oklch\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)|rgb\([^)]+\)|rgba\([^)]+\)|[a-zA-Z]+)$/,
+    'brandPrimary must be a CSS color',
+  )
+  .nullable();
+```
+
+`brandPrimary` entra en create (opcional) y en update (opcional, nullable). `logoKey` no está en esos schemas.
+
+**Tests** (`incubators.domain.spec.ts`)
+
+| Caso | Tipo | Entrada | Esperado |
+|---|---|---|---|
+| color | ✅ | `brandPrimary: "#C8102E"` | aceptado |
+| oklch | ✅ | `oklch(0.577 0.245 27.325)` | aceptado |
+| inválido | ⚠️ | `red; background:url(https://evil)` | 400 |
+| borrar | ✅ | `brandPrimary: null` | aceptado |
+| logo en JSON | ⚠️ | `{ logoKey: "incubators/x/logo.png" }` | 400, el schema es `.strict()` |
+
+### T6.3c Upload, lectura y borrado del logo
+
+- [ ] `IncubatorsService` usa `ObjectStorage`. Llave `incubators/<id>/logo`. Al subir, si ya había `logoKey`, `delete` del objeto viejo y luego `put`. Si `put` falla, la fila no cambia.
+
+**Archivos**
+
+- Modify: `api/src/incubators/incubators.service.ts`, `incubators.controller.ts`, `incubators.module.ts`
+- Test: `api/src/incubators/incubators.service.spec.ts`, `incubators.http.spec.ts`
+
+**Tests**
+
+| Caso | Tipo | Entrada | Esperado |
+|---|---|---|---|
+| png | ✅ | 200 KB `image/png` + `If-Match` | 200, `logoKey` nuevo, `logoUrl` https |
+| reemplazo | ✅ | segundo upload | el `delete` del storage recibe la llave vieja |
+| tipo | ⚠️ | `text/html` | 400, storage no se llama |
+| peso | ⚠️ | 1 MB + 1 byte | 400 |
+| sin versión | ⚠️ | sin `If-Match` | 428 |
+| ajena | 🔒 | director de otra incubadora | 404, storage no se llama |
+| quitar | ✅ | `DELETE .../logo` | `logoKey` null y `delete` del objeto |
+| get sin logo | ✅ | `logoKey` null | `logoUrl` null, sin llamar a `signedGet` |
+
+El plan de pantallas que consume esto está en `docs/superpowers/plans/2026-09-29-incubapp-ui.md`.
+
 ## Definition of Done
 
 - [ ] Tests ✅, ⚠️ y 🔒 de la tarea en verde. No se cierra con solo el ✅.
@@ -1036,6 +1105,7 @@ Contadores de latencia, 4xx, 5xx, 429. Unit del interceptor: una request 429 inc
 4. Receta sobre `institutions`, luego `geo-units`, `incubators`, `users` / `memberships`.
 5. `frameworks` mínimos, `startups`, snapshots, `incubations`.
 6. `metric-readings` upsert, notificaciones in-app, T7.1 y T7.3.
+6b. Marca de incubadora (T6.3b y T6.3c) antes de pintar los portales. No era parte del POC ya cerrado.
 7. T4.7–T4.13 y T4.15 cuando el primer recurso ya los necesite (búsqueda en startups, If-Match en incubators, storage cuando haya evidencia).
 
 T2.8, T6.8, T6.11 completo, T6.13–T6.16, T6.18, T7.2, T7.4 y T8 quedan fuera del corte. Sus tests siguen escritos aquí para no reabrir el diseño.
