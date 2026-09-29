@@ -67,6 +67,8 @@ describe('IncubatorsController (HTTP)', () => {
     getWithDeleted: createMockFn(),
     create: createMockFn(),
     update: createMockFn(),
+    uploadLogo: createMockFn(),
+    deleteLogo: createMockFn(),
     remove: createMockFn(),
     restore: createMockFn(),
     purge: createMockFn(),
@@ -248,6 +250,141 @@ describe('IncubatorsController (HTTP)', () => {
         incubatorId: '01900000-0000-7000-8000-000000000001',
       })
       .expect(400);
+  });
+
+  it('create brandPrimary invalido 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/incubators')
+      .send({
+        name: 'X',
+        slug: 'x',
+        brandPrimary: 'red; background:url(https://evil)',
+      })
+      .expect(400);
+    expect(service.create.calls).toHaveLength(0);
+  });
+
+  it('create logoKey en JSON 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/incubators')
+      .send({
+        name: 'X',
+        slug: 'x',
+        logoKey: 'incubators/x/logo.png',
+      })
+      .expect(400);
+    expect(service.create.calls).toHaveLength(0);
+  });
+
+  it('upload logo png con If-Match', async () => {
+    service.get.mockResolvedValue({
+      id: ID,
+      logoKey: null,
+      version: 1,
+    });
+    service.uploadLogo.mockResolvedValue({
+      id: ID,
+      logoKey: `incubators/${ID}/logo`,
+      logoUrl: 'https://cdn.example/logo',
+      version: 2,
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/api/v1/incubators/${ID}/logo`)
+      .set('If-Match', '1')
+      .attach('file', Buffer.alloc(200 * 1024, 1), {
+        filename: 'logo.png',
+        contentType: 'image/png',
+      })
+      .expect(200);
+
+    expect(
+      (res.body as { data: { logoKey: string; logoUrl: string } }).data.logoKey,
+    ).toBe(`incubators/${ID}/logo`);
+    expect((res.body as { data: { logoUrl: string } }).data.logoUrl).toMatch(
+      /^https:/,
+    );
+    expect(service.uploadLogo.calls).toHaveLength(1);
+  });
+
+  it('upload logo sin If-Match 428', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/incubators/${ID}/logo`)
+      .attach('file', Buffer.from('png'), {
+        filename: 'logo.png',
+        contentType: 'image/png',
+      })
+      .expect(428);
+    expect(service.uploadLogo.calls).toHaveLength(0);
+  });
+
+  it('upload logo tipo html 400', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/incubators/${ID}/logo`)
+      .set('If-Match', '1')
+      .attach('file', Buffer.from('<html>'), {
+        filename: 'x.html',
+        contentType: 'text/html',
+      })
+      .expect(400);
+    expect(service.uploadLogo.calls).toHaveLength(0);
+  });
+
+  it('upload logo incubadora ajena 404', async () => {
+    service.get.mockRejectedValue(new NotFoundException('Incubator not found'));
+    await request(app.getHttpServer())
+      .post(`/api/v1/incubators/${ID}/logo`)
+      .set('If-Match', '1')
+      .attach('file', Buffer.from('png'), {
+        filename: 'logo.png',
+        contentType: 'image/png',
+      })
+      .expect(404);
+    expect(service.uploadLogo.calls).toHaveLength(0);
+  });
+
+  it('delete logo', async () => {
+    service.get.mockResolvedValue({
+      id: ID,
+      logoKey: `incubators/${ID}/logo`,
+      version: 1,
+    });
+    service.deleteLogo.mockResolvedValue({
+      id: ID,
+      logoKey: null,
+      logoUrl: null,
+      version: 2,
+    });
+
+    const res = await request(app.getHttpServer())
+      .delete(`/api/v1/incubators/${ID}/logo`)
+      .set('If-Match', '1')
+      .expect(200);
+
+    expect(
+      (res.body as { data: { logoKey: null; logoUrl: null } }).data,
+    ).toMatchObject({ logoKey: null, logoUrl: null });
+    expect(service.deleteLogo.calls).toHaveLength(1);
+  });
+
+  it('delete logo sin If-Match 428', async () => {
+    await request(app.getHttpServer())
+      .delete(`/api/v1/incubators/${ID}/logo`)
+      .expect(428);
+    expect(service.deleteLogo.calls).toHaveLength(0);
+  });
+
+  it('get sin logoUrl null', async () => {
+    service.get.mockResolvedValue({
+      id: ID,
+      logoKey: null,
+      logoUrl: null,
+      version: 1,
+    });
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/incubators/${ID}`)
+      .expect(200);
+    expect((res.body as { data: { logoUrl: null } }).data.logoUrl).toBeNull();
   });
 
   it('rate limit shape 429 Retry-After', () => {

@@ -3,11 +3,18 @@ import { AnalyticsModule } from '../analytics/analytics.module.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { AuthzModule } from '../authz/authz.module.js';
 import { FrameworksModule } from '../frameworks/frameworks.module.js';
+import { MinioModule } from '../storage/minio.module.js';
 import { IncubatorsController } from './incubators.controller.js';
 import { IncubatorsService } from './incubators.service.js';
 
 @Module({
-  imports: [AuthzModule, AuditModule, FrameworksModule, AnalyticsModule],
+  imports: [
+    AuthzModule,
+    AuditModule,
+    FrameworksModule,
+    AnalyticsModule,
+    MinioModule,
+  ],
   controllers: [IncubatorsController],
   providers: [IncubatorsService],
   exports: [IncubatorsService],

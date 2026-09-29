@@ -1,7 +1,12 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { IncubatorsService } from './incubators.service.js';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { IncubatorsService, LOGO_MAX_BYTES } from './incubators.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import { runWithRequestContext } from '../context/request-context.js';
+import type { ObjectStorage } from '../storage/object-storage.js';
 
 function createMockFn<Args extends unknown[] = unknown[], Result = unknown>() {
   let resolved: Result | undefined;
@@ -48,6 +53,8 @@ type IncubatorRow = {
   slug: string;
   latitude: number | null;
   longitude: number | null;
+  brandPrimary: string | null;
+  logoKey: string | null;
   institutionId: string | null;
   version: number;
   deletedAt: Date | null;
@@ -63,6 +70,8 @@ function sample(overrides: Partial<IncubatorRow> = {}): IncubatorRow {
     slug: 'alpha',
     latitude: 19.43,
     longitude: -99.13,
+    brandPrimary: null,
+    logoKey: null,
     institutionId: null,
     version: 1,
     deletedAt: null,
@@ -103,7 +112,21 @@ describe('IncubatorsService', () => {
       assertPublishedFramework: () => Promise.resolve(),
     };
 
-    const service = new IncubatorsService(prisma, frameworks as never);
+    const storage = {
+      put: createMockFn<[Buffer, string], string>(),
+      signedGet: createMockFn<
+        [string, number?],
+        { url: string; expiresIn: number }
+      >(),
+      delete: createMockFn<[string], void>(),
+      configuredBucket: 'test',
+    };
+
+    const service = new IncubatorsService(
+      prisma,
+      frameworks as never,
+      storage as unknown as ObjectStorage,
+    );
     return {
       service,
       incubator,
@@ -112,6 +135,7 @@ describe('IncubatorsService', () => {
       baseIncubator,
       baseIncubation,
       frameworks,
+      storage,
     };
   }
 
@@ -230,5 +254,158 @@ describe('IncubatorsService', () => {
         institutionId: '01900000-0000-7000-8000-000000000099',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('upload logo png', async () => {
+    const { service, incubator, storage } = setup();
+    const key = `incubators/${SCOPE_A}/logo`;
+    const buffer = Buffer.alloc(200 * 1024, 1);
+    incubator.findFirst.mockImplementation(() => {
+      if (storage.put.calls.length > 0) {
+        return Promise.resolve(sample({ logoKey: key, version: 2 }));
+      }
+      return Promise.resolve(sample({ logoKey: null, version: 1 }));
+    });
+    incubator.updateMany.mockResolvedValue({ count: 1 });
+    storage.put.mockResolvedValue(key);
+    storage.signedGet.mockResolvedValue({
+      url: 'https://cdn.example/logo',
+      expiresIn: 3600,
+    });
+
+    const result = await service.uploadLogo(SCOPE_A, 1, {
+      buffer,
+      mimetype: 'image/png',
+      size: buffer.length,
+    });
+
+    expect(storage.put.calls).toHaveLength(1);
+    expect(storage.put.calls[0][1]).toBe(key);
+    expect(result.logoKey).toBe(key);
+    expect(result.logoUrl).toBe('https://cdn.example/logo');
+  });
+
+  it('upload logo reemplazo borra llave vieja', async () => {
+    const { service, incubator, storage } = setup();
+    const oldKey = `incubators/${SCOPE_A}/logo`;
+    const buffer = Buffer.from('png');
+    incubator.findFirst.mockImplementation(() => {
+      if (storage.put.calls.length > 0) {
+        return Promise.resolve(sample({ logoKey: oldKey, version: 2 }));
+      }
+      return Promise.resolve(sample({ logoKey: oldKey, version: 1 }));
+    });
+    incubator.updateMany.mockResolvedValue({ count: 1 });
+    storage.delete.mockResolvedValue(undefined);
+    storage.put.mockResolvedValue(oldKey);
+    storage.signedGet.mockResolvedValue({
+      url: 'https://cdn.example/logo',
+      expiresIn: 3600,
+    });
+
+    await service.uploadLogo(SCOPE_A, 1, {
+      buffer,
+      mimetype: 'image/png',
+      size: buffer.length,
+    });
+
+    expect(storage.delete.calls).toHaveLength(1);
+    expect(storage.delete.calls[0][0]).toBe(oldKey);
+    expect(storage.put.calls).toHaveLength(1);
+  });
+
+  it('upload logo tipo invalido no llama storage', async () => {
+    const { service, storage } = setup();
+    await expect(
+      service.uploadLogo(SCOPE_A, 1, {
+        buffer: Buffer.from('<html>'),
+        mimetype: 'text/html',
+        size: 6,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(storage.put.calls).toHaveLength(0);
+    expect(storage.delete.calls).toHaveLength(0);
+  });
+
+  it('upload logo sobrepeso 400', async () => {
+    const { service, storage } = setup();
+    const size = LOGO_MAX_BYTES + 1;
+    await expect(
+      service.uploadLogo(SCOPE_A, 1, {
+        buffer: Buffer.alloc(size),
+        mimetype: 'image/png',
+        size,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(storage.put.calls).toHaveLength(0);
+  });
+
+  it('upload logo incubadora ajena 404 sin storage', async () => {
+    const { service, storage } = setup();
+    await expect(
+      runWithRequestContext(
+        {
+          userId: 'director-1',
+          actorId: 'director-1',
+          incubatorId: SCOPE_A,
+          isSuperAdmin: false,
+        },
+        () =>
+          service.uploadLogo(SCOPE_B, 1, {
+            buffer: Buffer.from('png'),
+            mimetype: 'image/png',
+            size: 3,
+          }),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(storage.put.calls).toHaveLength(0);
+    expect(storage.delete.calls).toHaveLength(0);
+  });
+
+  it('upload logo put falla no cambia fila', async () => {
+    const { service, incubator, storage } = setup();
+    incubator.findFirst.mockResolvedValue(
+      sample({ logoKey: null, version: 1 }),
+    );
+    storage.put.mockRejectedValue(new Error('minio down'));
+
+    await expect(
+      service.uploadLogo(SCOPE_A, 1, {
+        buffer: Buffer.from('png'),
+        mimetype: 'image/png',
+        size: 3,
+      }),
+    ).rejects.toThrow('minio down');
+    expect(incubator.updateMany.calls).toHaveLength(0);
+  });
+
+  it('delete logo pone null y borra objeto', async () => {
+    const { service, incubator, storage } = setup();
+    const key = `incubators/${SCOPE_A}/logo`;
+    incubator.findFirst.mockImplementation(() => {
+      if (incubator.updateMany.calls.length > 0) {
+        return Promise.resolve(sample({ logoKey: null, version: 2 }));
+      }
+      return Promise.resolve(sample({ logoKey: key, version: 1 }));
+    });
+    incubator.updateMany.mockResolvedValue({ count: 1 });
+    storage.delete.mockResolvedValue(undefined);
+
+    const result = await service.deleteLogo(SCOPE_A, 1);
+    expect(incubator.updateMany.calls[0][0]).toMatchObject({
+      where: { id: SCOPE_A, version: 1 },
+      data: { logoKey: null },
+    });
+    expect(storage.delete.calls[0][0]).toBe(key);
+    expect(result.logoKey).toBeNull();
+    expect(result.logoUrl).toBeNull();
+  });
+
+  it('get sin logo no llama signedGet', async () => {
+    const { service, incubator, storage } = setup();
+    incubator.findFirst.mockResolvedValue(sample({ logoKey: null }));
+    const result = await service.get(SCOPE_A);
+    expect(result.logoUrl).toBeNull();
+    expect(storage.signedGet.calls).toHaveLength(0);
   });
 });

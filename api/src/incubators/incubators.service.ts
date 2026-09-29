@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -14,13 +15,23 @@ import { withStableIdOrder } from '../common/query/pagination.js';
 import { buildSearchWhere, mergeWhere } from '../common/query/search.js';
 import { FrameworksService } from '../frameworks/frameworks.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ObjectStorage } from '../storage/object-storage.js';
 import { INCUBATOR_SEARCH_FIELDS } from './incubator.dto.js';
+
+export const LOGO_MIME_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+]);
+
+export const LOGO_MAX_BYTES = 1024 * 1024;
 
 export type CreateIncubatorInput = {
   name: string;
   slug: string;
   latitude?: number | null;
   longitude?: number | null;
+  brandPrimary?: string | null;
   institutionId?: string | null;
   frameworkId?: string | null;
 };
@@ -30,6 +41,7 @@ export type UpdateIncubatorInput = {
   slug?: string;
   latitude?: number | null;
   longitude?: number | null;
+  brandPrimary?: string | null;
   institutionId?: string | null;
   frameworkId?: string | null;
 };
@@ -40,6 +52,14 @@ export type ListIncubatorsArgs = {
   orderBy: Prisma.IncubatorOrderByWithRelationInput[];
   where: Prisma.IncubatorWhereInput;
   q?: string;
+};
+
+export type IncubatorWithLogo = Incubator & { logoUrl: string | null };
+
+export type LogoFileInput = {
+  buffer: Buffer;
+  mimetype: string;
+  size: number;
 };
 
 export type GeoJsonFeatureCollection = {
@@ -63,6 +83,7 @@ export class IncubatorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly frameworks: FrameworksService,
+    private readonly storage: ObjectStorage,
     @Optional() private readonly analytics?: AnalyticsService,
   ) {}
 
@@ -96,6 +117,53 @@ export class IncubatorsService {
       return where;
     }
     return mergeWhere(where, { id: scopeId });
+  }
+
+  private logoObjectKey(id: string): string {
+    return `incubators/${id}/logo`;
+  }
+
+  private assertLogoFile(file: LogoFileInput | undefined): LogoFileInput {
+    if (!file) {
+      throw new BadRequestException('Logo file is required');
+    }
+    if (!LOGO_MIME_TYPES.has(file.mimetype)) {
+      throw new BadRequestException('Logo must be png, jpeg, or webp');
+    }
+    if (file.size > LOGO_MAX_BYTES || file.buffer.length > LOGO_MAX_BYTES) {
+      throw new BadRequestException('Logo must be at most 1MB');
+    }
+    return file;
+  }
+
+  private async withLogoUrl(row: Incubator): Promise<IncubatorWithLogo> {
+    if (row.logoKey == null) {
+      return { ...row, logoUrl: null };
+    }
+    const signed = await this.storage.signedGet(row.logoKey);
+    return { ...row, logoUrl: signed.url };
+  }
+
+  /**
+   * Optimistic concurrency helper shared by update / logo write paths.
+   * Missing row with matching version → 409 if still exists, else 404.
+   */
+  private async assertVersionUpdate(
+    id: string,
+    version: number,
+    count: number,
+  ): Promise<void> {
+    if (count > 0) {
+      return;
+    }
+    const existing = await this.prisma.client.incubator.findFirst({
+      where: { id },
+      ...({ withDeleted: true } as object),
+    });
+    if (!existing || existing.deletedAt !== null) {
+      throw new NotFoundException('Incubator not found');
+    }
+    throw new ConflictException('Version conflict');
   }
 
   async list(
@@ -149,7 +217,7 @@ export class IncubatorsService {
     return { items, total };
   }
 
-  async get(id: string): Promise<Incubator> {
+  async get(id: string): Promise<IncubatorWithLogo> {
     this.assertScopeAccess(id);
     const row = await this.prisma.client.incubator.findFirst({
       where: { id },
@@ -157,7 +225,7 @@ export class IncubatorsService {
     if (!row) {
       throw new NotFoundException('Incubator not found');
     }
-    return row;
+    return this.withLogoUrl(row);
   }
 
   /** Loads a row including soft-deleted (for audit before / restore checks). */
@@ -196,6 +264,7 @@ export class IncubatorsService {
         slug: input.slug,
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
+        brandPrimary: input.brandPrimary ?? null,
         institutionId: input.institutionId ?? null,
         frameworkId: input.frameworkId ?? null,
       },
@@ -222,6 +291,9 @@ export class IncubatorsService {
       ...(input.slug !== undefined ? { slug: input.slug } : {}),
       ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
       ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
+      ...(input.brandPrimary !== undefined
+        ? { brandPrimary: input.brandPrimary }
+        : {}),
       ...(input.institutionId !== undefined
         ? { institutionId: input.institutionId }
         : {}),
@@ -236,15 +308,84 @@ export class IncubatorsService {
       data,
     });
 
-    if (result.count === 0) {
-      const existing = await this.prisma.client.incubator.findFirst({
-        where: { id },
-        ...({ withDeleted: true } as object),
-      });
-      if (!existing || existing.deletedAt !== null) {
-        throw new NotFoundException('Incubator not found');
-      }
+    await this.assertVersionUpdate(id, version, result.count);
+    await this.bumpAnalyticsCache();
+    const updated = await this.prisma.client.incubator.findFirst({
+      where: { id },
+    });
+    if (!updated) {
+      throw new NotFoundException('Incubator not found');
+    }
+    return updated;
+  }
+
+  async uploadLogo(
+    id: string,
+    version: number,
+    file: LogoFileInput | undefined,
+  ): Promise<IncubatorWithLogo> {
+    this.assertScopeAccess(id);
+    const logo = this.assertLogoFile(file);
+
+    const current = await this.prisma.client.incubator.findFirst({
+      where: { id },
+    });
+    if (!current) {
+      throw new NotFoundException('Incubator not found');
+    }
+    if (current.version !== version) {
       throw new ConflictException('Version conflict');
+    }
+
+    const key = this.logoObjectKey(id);
+    const previousKey = current.logoKey;
+
+    if (previousKey != null) {
+      await this.storage.delete(previousKey);
+    }
+
+    await this.storage.put(logo.buffer, key);
+
+    const result = await this.prisma.client.incubator.updateMany({
+      where: { id, version },
+      data: {
+        logoKey: key,
+        version: { increment: 1 },
+      },
+    });
+
+    await this.assertVersionUpdate(id, version, result.count);
+    await this.bumpAnalyticsCache();
+    return this.get(id);
+  }
+
+  async deleteLogo(id: string, version: number): Promise<IncubatorWithLogo> {
+    this.assertScopeAccess(id);
+
+    const current = await this.prisma.client.incubator.findFirst({
+      where: { id },
+    });
+    if (!current) {
+      throw new NotFoundException('Incubator not found');
+    }
+    if (current.version !== version) {
+      throw new ConflictException('Version conflict');
+    }
+
+    const previousKey = current.logoKey;
+
+    const result = await this.prisma.client.incubator.updateMany({
+      where: { id, version },
+      data: {
+        logoKey: null,
+        version: { increment: 1 },
+      },
+    });
+
+    await this.assertVersionUpdate(id, version, result.count);
+
+    if (previousKey != null) {
+      await this.storage.delete(previousKey);
     }
 
     await this.bumpAnalyticsCache();

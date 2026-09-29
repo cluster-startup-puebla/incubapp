@@ -191,6 +191,8 @@ model Incubator {
   slug          String
   latitude      Float?
   longitude     Float?
+  brandPrimary  String?      @map("brand_primary")
+  logoKey       String?      @map("logo_key")
   institutionId String?      @map("institution_id") @db.Uuid
   institution   Institution? @relation(fields: [institutionId], references: [id])
   frameworkId   String?      @map("framework_id") @db.Uuid

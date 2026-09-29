@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -12,10 +13,12 @@ import {
   Query,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuditResource } from '../audit/audit-log.interceptor.js';
 import { AuditLogInterceptor } from '../audit/audit-log.interceptor.js';
@@ -38,9 +41,19 @@ import {
   ListIncubatorsQueryDto,
   UpdateIncubatorDto,
 } from './incubator.dto.js';
-import { IncubatorsService } from './incubators.service.js';
+import {
+  IncubatorsService,
+  LOGO_MAX_BYTES,
+  LOGO_MIME_TYPES,
+} from './incubators.service.js';
 
 type AuditRequest = Request & { auditBefore?: unknown };
+
+type UploadedLogo = {
+  buffer: Buffer;
+  mimetype: string;
+  size: number;
+};
 
 @ApiTags('incubators')
 @ApiStandardErrors()
@@ -153,6 +166,51 @@ export class IncubatorsController {
     const version = parseIfMatchVersion(ifMatch);
     req.auditBefore = await this.incubators.get(id);
     return toResource(await this.incubators.update(id, version, body));
+  }
+
+  @Post(':id/logo')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Upload incubator logo (If-Match required)' })
+  @ApiConsumes('multipart/form-data')
+  @RequirePermissions('incubator:update')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: LOGO_MAX_BYTES },
+      fileFilter: (_req, file, callback) => {
+        if (!LOGO_MIME_TYPES.has(file.mimetype)) {
+          callback(
+            new BadRequestException('Logo must be png, jpeg, or webp'),
+            false,
+          );
+          return;
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async uploadLogo(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('if-match') ifMatch: string | undefined,
+    @UploadedFile() file: UploadedLogo | undefined,
+    @Req() req: AuditRequest,
+  ) {
+    const version = parseIfMatchVersion(ifMatch);
+    req.auditBefore = await this.incubators.get(id);
+    return toResource(await this.incubators.uploadLogo(id, version, file));
+  }
+
+  @Delete(':id/logo')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Remove incubator logo (If-Match required)' })
+  @RequirePermissions('incubator:update')
+  async deleteLogo(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('if-match') ifMatch: string | undefined,
+    @Req() req: AuditRequest,
+  ) {
+    const version = parseIfMatchVersion(ifMatch);
+    req.auditBefore = await this.incubators.get(id);
+    return toResource(await this.incubators.deleteLogo(id, version));
   }
 
   @Delete(':id')

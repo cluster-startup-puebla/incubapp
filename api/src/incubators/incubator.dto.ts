@@ -22,12 +22,21 @@ const longitude = z
 const institutionId = z.string().uuid().nullable();
 const frameworkId = z.string().uuid().nullable();
 
+const brandPrimary = z
+  .string()
+  .regex(
+    /^(#[0-9a-fA-F]{3,8}|oklch\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)|rgb\([^)]+\)|rgba\([^)]+\)|[a-zA-Z]+)$/,
+    'brandPrimary must be a CSS color',
+  )
+  .nullable();
+
 export const createIncubatorSchema = z
   .object({
     name: nonEmptyString,
     slug,
     latitude: latitude.optional().nullable(),
     longitude: longitude.optional().nullable(),
+    brandPrimary: brandPrimary.optional(),
     institutionId: institutionId.optional().nullable(),
     frameworkId: frameworkId.optional().nullable(),
   })
@@ -39,6 +48,7 @@ const updateIncubatorObjectSchema = z
     slug: slug.optional(),
     latitude: latitude.optional().nullable(),
     longitude: longitude.optional().nullable(),
+    brandPrimary: brandPrimary.optional(),
     institutionId: institutionId.optional().nullable(),
     frameworkId: frameworkId.optional().nullable(),
   })

@@ -62,6 +62,49 @@ describe('T6.3 incubators domain extras', () => {
     const parsed = updateIncubatorSchema.safeParse({});
     expect(parsed.success).toBe(false);
   });
+
+  it('brandPrimary color hex aceptado', () => {
+    const parsed = createIncubatorSchema.safeParse({
+      name: 'Brand',
+      slug: 'brand',
+      brandPrimary: '#C8102E',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('brandPrimary oklch aceptado', () => {
+    const parsed = updateIncubatorSchema.safeParse({
+      brandPrimary: 'oklch(0.577 0.245 27.325)',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('brandPrimary invalido 400', () => {
+    const parsed = updateIncubatorSchema.safeParse({
+      brandPrimary: 'red; background:url(https://evil)',
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('brandPrimary null borra marca', () => {
+    const parsed = updateIncubatorSchema.safeParse({
+      brandPrimary: null,
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('logoKey en JSON 400', () => {
+    const createParsed = createIncubatorSchema.safeParse({
+      name: 'X',
+      slug: 'x',
+      logoKey: 'incubators/x/logo.png',
+    });
+    expect(createParsed.success).toBe(false);
+    const updateParsed = updateIncubatorSchema.safeParse({
+      logoKey: 'incubators/x/logo.png',
+    });
+    expect(updateParsed.success).toBe(false);
+  });
 });
 
 (hasDatabase ? describe : describe.skip)(
@@ -83,7 +126,16 @@ describe('T6.3 incubators domain extras', () => {
         base,
       } as unknown as PrismaService;
       const frameworks = new FrameworksService(prismaService);
-      service = new IncubatorsService(prismaService, frameworks);
+      service = new IncubatorsService(prismaService, frameworks, {
+        put: () => Promise.resolve('key'),
+        signedGet: () =>
+          Promise.resolve({
+            url: 'https://example.test/logo',
+            expiresIn: 3600,
+          }),
+        delete: () => Promise.resolve(undefined),
+        configuredBucket: 'test',
+      } as never);
     });
 
     afterAll(async () => {

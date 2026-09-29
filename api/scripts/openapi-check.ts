@@ -175,6 +175,8 @@ import type { CallHandler, ExecutionContext } from '@nestjs/common';
         getWithDeleted: async () => ({}),
         create: async () => ({}),
         update: async () => ({}),
+        uploadLogo: async () => ({}),
+        deleteLogo: async () => ({}),
         remove: async () => ({}),
         restore: async () => ({}),
         purge: async () => undefined,
