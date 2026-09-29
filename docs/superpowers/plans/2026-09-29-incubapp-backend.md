@@ -152,7 +152,7 @@ Competiciones completas, jueces, premios, pivots, benchmarks con k-anonimato, pu
 
 ### T1.1 Convención de columnas de negocio
 
-- [ ] Mixin documentado y aplicado solo a modelos de negocio. **No** se lo pongas a `session`, `account`, `verification`.
+- [x] Mixin documentado y aplicado solo a modelos de negocio. **No** se lo pongas a `session`, `account`, `verification`.
 
 Campos: `id` UUID v7, `createdAt`, `updatedAt`, `deletedAt?`, `createdById?`, `updatedById?`, `deletedById?`, `version Int @default(1)`.
 
@@ -173,7 +173,7 @@ Campos: `id` UUID v7, `createdAt`, `updatedAt`, `deletedAt?`, `createdById?`, `u
 
 ### T1.2 Modelos Better Auth + `isSuperAdmin`
 
-- [ ] Campo `isSuperAdmin Boolean @default(false) @map("is_super_admin")` en `User`. Regenerar con `npx auth@latest generate -y` y revisar el diff a mano para no perder `output` del generator ni el campo propio.
+- [x] Campo `isSuperAdmin Boolean @default(false) @map("is_super_admin")` en `User`. Regenerar con `npx auth@latest generate -y` y revisar el diff a mano para no perder `output` del generator ni el campo propio.
 
 **Tests**
 
@@ -187,7 +187,7 @@ Campos: `id` UUID v7, `createdAt`, `updatedAt`, `deletedAt?`, `createdById?`, `u
 
 ### T1.3 PrismaService
 
-- [ ] Connect en `onModuleInit`, disconnect en destroy, log de queries > 500 ms solo si `NODE_ENV=development`.
+- [x] Connect en `onModuleInit`, disconnect en destroy, log de queries > 500 ms solo si `NODE_ENV=development`.
 
 **Archivos:** `api/src/prisma/prisma.service.ts`, `prisma.service.spec.ts`
 
@@ -204,7 +204,7 @@ Campos: `id` UUID v7, `createdAt`, `updatedAt`, `deletedAt?`, `createdById?`, `u
 
 ### T1.4 Una extensión: soft delete
 
-- [ ] Un solo `$extends` en `api/src/prisma/soft-delete.extension.ts`. Modelos opt-in vía lista `SOFT_DELETE_MODELS`.
+- [x] Un solo `$extends` en `api/src/prisma/soft-delete.extension.ts`. Modelos opt-in vía lista `SOFT_DELETE_MODELS`.
 
 Comportamiento:
 
@@ -237,7 +237,7 @@ Comportamiento:
 
 ### T1.5 Unicidad con soft delete
 
-- [ ] Índices únicos parciales `WHERE deleted_at IS NULL` en SQL crudo. Prohibido `@@unique` de Prisma en campos de modelos con soft delete.
+- [x] Índices únicos parciales `WHERE deleted_at IS NULL` en SQL crudo. Prohibido `@@unique` de Prisma en campos de modelos con soft delete.
 
 **Tests** (`partial-unique.spec.ts` + script `api/prisma/check-no-prisma-unique.ts`)
 
@@ -251,7 +251,7 @@ Comportamiento:
 
 ### T1.6 Auditoría en la misma extensión
 
-- [ ] `createdById` / `updatedById` / `deletedById` salen de `RequestContext` (AsyncLocalStorage). No es una segunda extensión.
+- [x] `createdById` / `updatedById` / `deletedById` salen de `RequestContext` (AsyncLocalStorage). No es una segunda extensión.
 
 **Tests**
 
@@ -266,7 +266,7 @@ Comportamiento:
 
 ### T1.7 Seed idempotente
 
-- [ ] Super admin vía Better Auth API. Geo de México: país, estados, municipios de Puebla. Framework v1 publicado mínimo.
+- [x] Super admin vía Better Auth API. Geo de México: país, estados, municipios de Puebla. Framework v1 publicado mínimo.
 
 **Tests** (`seed.spec.ts`, DB de test)
 

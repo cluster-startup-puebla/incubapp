@@ -56,6 +56,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Soft-delete unique check
+        run: npm run db:check-uniques
+
       - name: Prisma migration drift check
         env:
           PGPASSWORD: incubapp

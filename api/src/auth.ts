@@ -1,15 +1,24 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { sendMail } from './mail/send-mail.js';
-import { prisma } from './prisma/prisma.client.js';
+import { baseClient } from './prisma/prisma.client.js';
 import { requiredEnv } from './env.js';
 
 export const auth = betterAuth({
   appName: 'Incubapp',
   trustedOrigins: [requiredEnv('WEB_ORIGIN')],
-  database: prismaAdapter(prisma, {
+  database: prismaAdapter(baseClient, {
     provider: 'postgresql',
   }),
+  user: {
+    additionalFields: {
+      isSuperAdmin: {
+        type: 'boolean',
+        defaultValue: false,
+        input: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {

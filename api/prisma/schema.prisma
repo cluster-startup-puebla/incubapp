@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -18,6 +16,7 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  isSuperAdmin  Boolean   @default(false) @map("is_super_admin")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
@@ -73,4 +72,94 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+/// @business
+model Institution {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  name        String
+  countryCode String    @map("country_code") @db.Char(2)
+
+  @@map("institution")
+}
+
+enum GeoUnitLevel {
+  COUNTRY
+  STATE
+  MUNICIPALITY
+}
+
+/// @business
+model GeoUnit {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  level    GeoUnitLevel
+  code     String
+  name     String
+  parentId String?   @map("parent_id") @db.Uuid
+  parent   GeoUnit?  @relation("GeoUnitHierarchy", fields: [parentId], references: [id])
+  children GeoUnit[] @relation("GeoUnitHierarchy")
+
+  @@index([parentId])
+  @@index([code])
+  @@map("geo_unit")
+}
+
+enum FrameworkStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// @business
+model Framework {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  name         String
+  majorVersion Int             @default(1) @map("major_version")
+  status       FrameworkStatus @default(DRAFT)
+  stages       FrameworkStage[]
+
+  @@map("framework")
+}
+
+/// @business
+model FrameworkStage {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  frameworkId String    @map("framework_id") @db.Uuid
+  framework   Framework @relation(fields: [frameworkId], references: [id])
+  name        String
+  sortOrder   Int       @map("sort_order")
+
+  @@index([frameworkId])
+  @@map("framework_stage")
 }
