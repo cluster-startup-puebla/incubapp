@@ -24,6 +24,8 @@ import { MembershipsController } from '../src/membership/memberships.controller.
 import { MembershipsHttpService } from '../src/membership/memberships-http.service.js';
 import { MetricReadingsController } from '../src/metric-readings/metric-readings.controller.js';
 import { MetricReadingsService } from '../src/metric-readings/metric-readings.service.js';
+import { NotificationsController } from '../src/notifications/notifications.controller.js';
+import { NotificationsService } from '../src/notifications/notifications.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
 import { SessionsService } from '../src/sessions/sessions.service.js';
 import { StartupsController } from '../src/startups/startups.controller.js';
@@ -44,6 +46,7 @@ import type { CallHandler, ExecutionContext } from '@nestjs/common';
     InstitutionsController,
     IncubationsController,
     MetricReadingsController,
+    NotificationsController,
     GeoUnitsController,
     IncubatorsController,
     FrameworksController,
@@ -122,6 +125,15 @@ import type { CallHandler, ExecutionContext } from '@nestjs/common';
         get: async () => ({}),
         upsert: async () => ({ row: {}, created: true }),
         verify: async () => ({}),
+      },
+    },
+    {
+      provide: NotificationsService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
+        markRead: async () => ({}),
+        create: async () => ({}),
       },
     },
     {

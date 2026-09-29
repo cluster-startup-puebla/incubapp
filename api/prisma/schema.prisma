@@ -23,6 +23,7 @@ model User {
   accounts      Account[]
   memberships   Membership[]
   invitations   MembershipInvitation[]
+  notifications Notification[]
 
   @@unique([email])
   @@map("user")
@@ -424,4 +425,33 @@ model MetricReading {
   @@index([metricDefId])
   @@index([startupId, period])
   @@map("metric_reading")
+}
+
+/// @business — per-user in-app notification (not tenant-scoped).
+/// Email delivery is out of the happy path; failures land in email_* queue fields.
+model Notification {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+  version     Int       @default(1)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String
+  body  String?
+  readAt DateTime? @map("read_at")
+
+  /// Last mailer error when email delivery was attempted and failed (retry later).
+  emailError    String?   @map("email_error")
+  /// When the failed delivery was queued for retry.
+  emailQueuedAt DateTime? @map("email_queued_at")
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@map("notification")
 }

@@ -75,6 +75,10 @@ describe('TENANT_RESOURCES registry', () => {
     expect(incubation?.idor).toBe('scope');
     expect(HTTP_RESOURCES.some((r) => r.model === 'Incubation')).toBe(true);
   });
+
+  it('notification es per-user (no TENANT_MODEL)', () => {
+    expect(TENANT_MODELS).not.toContain('Notification');
+  });
 });
 
 (hasDatabase ? describe : describe.skip)(

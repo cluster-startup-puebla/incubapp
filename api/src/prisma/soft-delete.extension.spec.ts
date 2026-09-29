@@ -239,6 +239,7 @@ describe('soft-delete query compiler', () => {
     expect(SOFT_DELETE_MODELS).toContain('MetricDef');
     expect(SOFT_DELETE_MODELS).toContain('Incubation');
     expect(SOFT_DELETE_MODELS).toContain('MetricReading');
+    expect(SOFT_DELETE_MODELS).toContain('Notification');
     expect(isSoftDeleteModel('Institution')).toBe(true);
     expect(isSoftDeleteModel('GeoUnit')).toBe(true);
     expect(isSoftDeleteModel('Framework')).toBe(true);

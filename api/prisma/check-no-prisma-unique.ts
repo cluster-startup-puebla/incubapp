@@ -18,6 +18,7 @@ const SOFT_DELETE_MODELS = [
   'MetricDef',
   'Incubation',
   'MetricReading',
+  'Notification',
 ];
 
 function extractModelBlock(schema: string, model: string): string | null {

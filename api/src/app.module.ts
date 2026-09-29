@@ -21,6 +21,7 @@ import { IncubationsModule } from './incubations/incubations.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { MembershipModule } from './membership/membership.module.js';
 import { MetricReadingsModule } from './metric-readings/metric-readings.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { IdempotencyModule } from './idempotency/idempotency.module.js';
 import { RequestLoggingInterceptor } from './logging/request-log.js';
 import { MinioModule } from './storage/minio.module.js';
@@ -54,6 +55,7 @@ import { UsersModule } from './users/users.module.js';
     InstitutionsModule,
     IncubationsModule,
     MetricReadingsModule,
+    NotificationsModule,
     IncubatorsModule,
     FrameworksModule,
     GeoUnitsModule,

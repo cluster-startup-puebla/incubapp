@@ -6,7 +6,25 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.17 notificaciones en curso**. Checkpoint metric-readings: pendiente de este commit. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T7.1 overview en curso**. Checkpoint notifications: pendiente de este commit. Checkpoint metric-readings: `1eb8860`. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.17 (`notifications` in-app)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Marcar leída | hecho | `POST /notifications/:id/read` setea `readAt` solo si `userId` = actor |
+| Ajena | hecho | id de otro user → **404** (no 403) |
+| Email falla | hecho | `create({ attemptEmail: true })` conserva la fila in-app; `emailError` + `emailQueuedAt` para retry; la tx de negocio no revierte |
+| Happy path | hecho | create in-app **no** llama al mailer (POC solo in-app) |
+| Receta | hecho | Zod `.strict()`, envelope, fechas sin `z.date()`; sin Audit (solo mark-read/list propios) |
+| Soft delete / uniques | hecho | Notification en `SOFT_DELETE_MODELS`; sin `@@unique`; **no** en `TENANT_MODELS` ni `@RequiresTenant()` |
+| OpenAPI | hecho | controller en `openapi-check.ts` y `public-routes.spec.ts` |
+
+Migración: `20260929090140_notification_in_app` (`notification` + índices por user/readAt).
+
+Verificación del padre: **453** tests, lint 0 errores, `openapi:check` (53 paths) y `db:check-uniques` ok. En vivo: mark-read propio **200** con `readAt`, ajena **404**, el listado solo trae la propia.
+
+Gaps aceptados: sin HTTP create público (create es servicio interno), sin worker de retry de email, sin trash/restore/purge HTTP, sin T6.18 funding, sin T7/T8, sin resto de T3.6, sin T2.8.
 
 ## Hecho en T6.12 (`metric-readings` upsert)
 

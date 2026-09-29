@@ -14,6 +14,7 @@ import { InstitutionsController } from '../institutions/institutions.controller.
 import { IncubationsController } from '../incubations/incubations.controller.js';
 import { MembershipsController } from '../membership/memberships.controller.js';
 import { MetricReadingsController } from '../metric-readings/metric-readings.controller.js';
+import { NotificationsController } from '../notifications/notifications.controller.js';
 import { SessionsController } from '../sessions/sessions.controller.js';
 import { StartupsController } from '../startups/startups.controller.js';
 import { UsersController } from '../users/users.controller.js';
@@ -62,6 +63,11 @@ const CONTROLLER_INVENTORY: Array<{
   {
     name: 'MetricReadingsController',
     type: MetricReadingsController,
+    anonymous: false,
+  },
+  {
+    name: 'NotificationsController',
+    type: NotificationsController,
     anonymous: false,
   },
   {
