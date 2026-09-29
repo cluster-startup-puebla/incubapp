@@ -6,7 +6,7 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **POC del backend cerrado**. Checkpoint map: pendiente de este commit. Checkpoint overview: `1b20030`. Checkpoint notifications: `60711c9`. Checkpoint metric-readings: `1eb8860`. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **POC del backend cerrado**. Checkpoint map: `73c24f0`. Checkpoint overview: `1b20030`. Checkpoint notifications: `60711c9`. Checkpoint metric-readings: `1eb8860`. Checkpoint incubations: `e9bab8a`. Checkpoint snapshots: `56945a0`. Checkpoint startups: `f4e5434`. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
 
 ## Hecho en T7.3 (`analytics` mapa)
 
