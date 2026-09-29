@@ -23,6 +23,13 @@ export const GLOBAL_RESOURCES = [
     /** Without permission → 403; no incubator scoping. */
     idor: 'permission' as const,
   },
+  {
+    model: 'GeoUnit' as const,
+    basePath: '/api/v1/geo-units',
+    methods: ['GET', 'PATCH', 'DELETE'] as const,
+    /** Without permission → 403; geo is global (no incubator scoping). */
+    idor: 'permission' as const,
+  },
 ] as const;
 
 export type TenantResource = (typeof TENANT_RESOURCES)[number];

@@ -14,6 +14,16 @@ import { RequirePermissions } from './require-permissions.decorator.js';
 import { Reflector } from '@nestjs/core';
 import { ForbiddenException, type ExecutionContext } from '@nestjs/common';
 
+const GEO_UNIT_READ_ONLY = {
+  'geo-unit:list': true,
+  'geo-unit:read': true,
+  'geo-unit:create': false,
+  'geo-unit:update': false,
+  'geo-unit:delete': false,
+  'geo-unit:restore': false,
+  'geo-unit:purge': false,
+} as const;
+
 /**
  * Documented expected matrix: every role × resource:action cell must appear.
  * Adding a role/action without an entry here fails `matriz completa`.
@@ -41,6 +51,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...GEO_UNIT_READ_ONLY,
   },
   coorganizer: {
     'startup:list': true,
@@ -64,6 +75,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...GEO_UNIT_READ_ONLY,
   },
   director: {
     'startup:list': true,
@@ -87,6 +99,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': true,
     'membership:restore': true,
     'membership:purge': false,
+    ...GEO_UNIT_READ_ONLY,
   },
   staff: {
     'startup:list': true,
@@ -110,6 +123,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...GEO_UNIT_READ_ONLY,
   },
   mentor: {
     'startup:list': true,
@@ -133,6 +147,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...GEO_UNIT_READ_ONLY,
   },
   founder: {
     'startup:list': true,
@@ -156,6 +171,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...GEO_UNIT_READ_ONLY,
   },
   judge: {
     'startup:list': true,
@@ -179,6 +195,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'membership:delete': false,
     'membership:restore': false,
     'membership:purge': false,
+    ...GEO_UNIT_READ_ONLY,
   },
 };
 
@@ -229,6 +246,30 @@ describe('permissions matrix', () => {
       canPerform({
         roles: [],
         permission: 'institution:purge',
+        isSuperAdmin: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('geo-unit read autenticado', () => {
+    expect(roleHasPermission('director', 'geo-unit:read')).toBe(true);
+    expect(roleHasPermission('judge', 'geo-unit:list')).toBe(true);
+    expect(
+      canPerform({ roles: ['director'], permission: 'geo-unit:read' }),
+    ).toBe(true);
+  });
+
+  it('geo-unit write no admin', () => {
+    expect(roleHasPermission('director', 'geo-unit:create')).toBe(false);
+    expect(roleHasPermission('director', 'geo-unit:delete')).toBe(false);
+    expect(roleHasPermission('cluster_admin', 'geo-unit:update')).toBe(false);
+    expect(
+      canPerform({ roles: ['director'], permission: 'geo-unit:create' }),
+    ).toBe(false);
+    expect(
+      canPerform({
+        roles: ['director'],
+        permission: 'geo-unit:create',
         isSuperAdmin: true,
       }),
     ).toBe(true);
@@ -301,5 +342,29 @@ describe('permissions matrix', () => {
     } as unknown as ExecutionContext;
 
     expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('guard niega geo-unit write director', () => {
+    class Fixture {
+      @RequirePermissions('geo-unit:create')
+      handler(this: void) {
+        return true;
+      }
+    }
+    const reflector = new Reflector();
+    const guard = new PermissionsGuard(reflector);
+    const handler = Fixture.prototype.handler;
+    const context = {
+      getHandler: () => handler,
+      getClass: () => Fixture,
+      switchToHttp: () => ({
+        getRequest: () => ({
+          user: { id: 'u1', isSuperAdmin: false },
+          membershipRoles: ['director'],
+        }),
+      }),
+    } as unknown as ExecutionContext;
+
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 });

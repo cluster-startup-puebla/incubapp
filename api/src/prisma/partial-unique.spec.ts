@@ -39,6 +39,10 @@ const hasDatabase = Boolean(process.env.DATABASE_URL);
       delete: (args: unknown) => Promise<unknown>;
       findMany: (args?: unknown) => Promise<unknown[]>;
     };
+    geoUnit: {
+      create: (args: unknown) => Promise<{ id: string }>;
+      delete: (args: unknown) => Promise<unknown>;
+    };
     $executeRawUnsafe: (sql: string) => Promise<unknown>;
     $disconnect: () => Promise<void>;
   };
@@ -70,6 +74,25 @@ const hasDatabase = Boolean(process.env.DATABASE_URL);
     // cleanup physical rows for this test
     await prisma.$executeRawUnsafe(
       `DELETE FROM institution WHERE name = '${name.replace(/'/g, "''")}'`,
+    );
+  });
+
+  it('recrear geo level+code tras soft delete', async () => {
+    const suffix = `${Date.now()}`;
+    const code = `PU-${suffix}`;
+
+    const first = await prisma.geoUnit.create({
+      data: { level: 'COUNTRY', code, name: `Geo ${suffix}` },
+    });
+    await prisma.geoUnit.delete({ where: { id: first.id } });
+
+    const second = await prisma.geoUnit.create({
+      data: { level: 'COUNTRY', code, name: `Geo 2 ${suffix}` },
+    });
+    expect(second.id).not.toBe(first.id);
+
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM geo_unit WHERE code = '${code.replace(/'/g, "''")}'`,
     );
   });
 

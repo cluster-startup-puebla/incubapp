@@ -8,6 +8,7 @@ const BUSINESS_MODELS = [
   'Membership',
   'Incubator',
   'Startup',
+  'GeoUnit',
 ] as const;
 
 const BUSINESS_FIELDS = [

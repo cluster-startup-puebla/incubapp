@@ -35,6 +35,14 @@ describe('TENANT_RESOURCES registry', () => {
     expect(institution?.idor).toBe('permission');
     expect(HTTP_RESOURCES.some((r) => r.model === 'Institution')).toBe(true);
   });
+
+  it('geo-unit es global permission-based (no TENANT_MODEL)', () => {
+    expect(TENANT_MODELS).not.toContain('GeoUnit');
+    const geoUnit = GLOBAL_RESOURCES.find((r) => r.model === 'GeoUnit');
+    expect(geoUnit).toBeDefined();
+    expect(geoUnit?.idor).toBe('permission');
+    expect(HTTP_RESOURCES.some((r) => r.model === 'GeoUnit')).toBe(true);
+  });
 });
 
 (hasDatabase ? describe : describe.skip)(

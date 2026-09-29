@@ -10,6 +10,8 @@ import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { assertOpenApiContract } from '../src/common/openapi/openapi-contract.js';
 import { HealthController } from '../src/health/health.controller.js';
 import { HealthService } from '../src/health/health.service.js';
+import { GeoUnitsController } from '../src/geo-units/geo-units.controller.js';
+import { GeoUnitsService } from '../src/geo-units/geo-units.service.js';
 import { InstitutionsController } from '../src/institutions/institutions.controller.js';
 import { InstitutionsService } from '../src/institutions/institutions.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
@@ -25,6 +27,7 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
     SessionsController,
     StartupsController,
     InstitutionsController,
+    GeoUnitsController,
   ],
   providers: [
     {
@@ -62,6 +65,21 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
       useValue: {
         list: async () => ({ items: [], total: 0 }),
         listDeleted: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
+        getWithDeleted: async () => ({}),
+        create: async () => ({}),
+        update: async () => ({}),
+        remove: async () => ({}),
+        restore: async () => ({}),
+        purge: async () => undefined,
+      },
+    },
+    {
+      provide: GeoUnitsService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        listDeleted: async () => ({ items: [], total: 0 }),
+        listChildren: async () => ({ items: [], total: 0 }),
         get: async () => ({}),
         getWithDeleted: async () => ({}),
         create: async () => ({}),

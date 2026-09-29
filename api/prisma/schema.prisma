@@ -215,6 +215,7 @@ model GeoUnit {
   parent   GeoUnit?  @relation("GeoUnitHierarchy", fields: [parentId], references: [id])
   children GeoUnit[] @relation("GeoUnitHierarchy")
 
+  // Active uniqueness: (level, code) WHERE deleted_at IS NULL — SQL migration
   @@index([parentId])
   @@index([code])
   @@map("geo_unit")

@@ -232,7 +232,9 @@ function fillUpdateAudit(
 describe('soft-delete query compiler', () => {
   it('lists SOFT_DELETE_MODELS with Institution', () => {
     expect(SOFT_DELETE_MODELS).toContain('Institution');
+    expect(SOFT_DELETE_MODELS).toContain('GeoUnit');
     expect(isSoftDeleteModel('Institution')).toBe(true);
+    expect(isSoftDeleteModel('GeoUnit')).toBe(true);
     expect(isSoftDeleteModel('Session')).toBe(false);
   });
 

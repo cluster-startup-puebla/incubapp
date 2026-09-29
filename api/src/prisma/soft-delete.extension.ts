@@ -9,6 +9,7 @@ export const SOFT_DELETE_MODELS = [
   'Membership',
   'Incubator',
   'Startup',
+  'GeoUnit',
 ] as const;
 
 export type SoftDeleteModelName = (typeof SOFT_DELETE_MODELS)[number];

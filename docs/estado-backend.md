@@ -6,7 +6,23 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.2 institutions cerrado en este checkpoint**. Siguiente: T6.1 `geo-units`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.1 geo-units cerrado en este checkpoint**. Siguiente: T6.3 `incubators`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.1 (`geo-units`)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Soft delete | hecho | `GeoUnit` en `SOFT_DELETE_MODELS` + `check-no-prisma-unique`; sin `@@unique` |
+| Unique parcial | hecho | `(level, code) WHERE deleted_at IS NULL` |
+| CRUD + children | hecho | list/get/children/create/update/delete/restore/trash/purge; envelope `toList`/`toResource` |
+| Jerarquía | hecho | COUNTRY sin parent; STATE→COUNTRY; MUNICIPALITY→STATE; skip de nivel → 422; ciclo self/descendant → 422 |
+| Permisos | hecho | list/read para roles autenticados; create/update/delete/restore/purge solo via `isSuperAdmin` bypass (director sin delete) |
+| Global | hecho | sin `@RequiresTenant()`; en `GLOBAL_RESOURCES`; controller protected en `public-routes.spec.ts` |
+| Seed | reutilizado | México + 2 estados + 2 municipios Puebla |
+
+Migración: `20260929073800_geo_unit_partial_unique`.
+
+Verificación del padre: **254** tests, lint 0 errores, `openapi:check` y `db:check-uniques` ok. En vivo: sin cookie 401, admin lista México, hijos `CDMX` y `PUE`, municipio colgando del país 422.
 
 ## Hecho en T5 / T6.2 (`institutions`)
 
@@ -81,7 +97,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.1 `geo-units` (lectura con sesión, escritura solo super admin). No implementar T3.6 ni T2.8.
+T6.3 `incubators`. No implementar T3.6 ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 
@@ -110,12 +126,12 @@ Commit `653ee3b`. Health `GET /api/v1/health`, readiness con Postgres y Redis, t
 
 ## Fuera del corte (no implementar)
 
-T2.8, T3.6 hasta decidir, T4.9–T4.10, T4.13, T4.15, T6.1, T6.3–T6.18 (salvo T6.2), T7.2, T7.4, T8.
+T2.8, T3.6 hasta decidir, T4.9–T4.10, T4.13, T4.15, T6.3–T6.18 (salvo T6.2), T7.2, T7.4, T8.
 
 ## Cómo retomar
 
 1. Leer este archivo.
-2. Copiar la receta de `institutions` al siguiente recurso (T6.1 / T6.3 / T6.4).
+2. Copiar la receta de `institutions` / `geo-units` al siguiente recurso (T6.3 / T6.4).
 3. No correr `nest new`. No mover `/api/auth` ni `GET /api/v1/health`.
 4. No commitear `.env`.
 5. `createdById` sigue siendo `String` (id de Better Auth), no UUID.
