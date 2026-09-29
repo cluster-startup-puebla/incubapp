@@ -6,7 +6,7 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.6 startups en curso** (alta en vivo 409 por llave foránea, sin commit). T4.9–T4.15 del corte transversal ya están. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.7 snapshots en curso**. Checkpoint startups: pendiente de este commit. Checkpoint hardening: `d2c7260`. Checkpoint logs/idempotency/storage: `96fb3a5`. Checkpoint frameworks: `bc139bf`. Checkpoint memberships: `c3cfa82`. Checkpoint incubators: `07acced`. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
 
 ## Hecho en T6.6 (`startups` mínimo POC)
 
@@ -23,7 +23,7 @@ Etapa activa: **T6.6 startups en curso** (alta en vivo 409 por llave foránea, s
 
 Migración: `20260929081701_startup_domain_visibility_snapshot` (`domain`, `visibility`, `startup_snapshot`).
 
-El subagente reportó **363** tests, lint 0 errores, `openapi:check` (41 paths) y `db:check-uniques` ok. El padre todavía no cierra el checkpoint: `POST /api/v1/startups` en vivo respondió **409** `P2003`.
+Verificación del padre: **375** tests, lint 0 errores, `openapi:check` y `db:check-uniques` ok. En vivo: alta **201**, mismo dominio **409** con candidatos, `?force=true` de super admin **201**. El guard de tenant ya no congela la resolución antes de que AuthGuard adjunte al usuario.
 
 ## Hecho en paralelo (`T4.9` / `T4.10` / `T4.13` / `T4.15`)
 

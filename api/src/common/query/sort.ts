@@ -70,4 +70,9 @@ export function parseSort(
   return clauses;
 }
 
-export const STARTUP_SORT_FIELDS = ['createdAt', 'name', 'id'] as const;
+export const STARTUP_SORT_FIELDS = [
+  'createdAt',
+  'name',
+  'domain',
+  'id',
+] as const;

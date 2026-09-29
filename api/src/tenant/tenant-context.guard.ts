@@ -25,9 +25,10 @@ export class TenantContextGuard implements CanActivate {
     const userId = request.user?.id;
 
     if (!userId) {
+      // AuthGuard may not have attached the user yet. Leave resolution open
+      // so the interceptor can read X-Incubator-Id after authentication.
       request.tenantIncubatorId = null;
       request.membershipRoles = [];
-      request.tenantResolved = true;
       return true;
     }
 

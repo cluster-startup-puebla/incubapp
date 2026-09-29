@@ -134,10 +134,11 @@ describe('ObjectStorage', () => {
 
   it('bucket ausente al boot', async () => {
     const fake = createFakeClient({ bucketExists: false });
-    const service = Object.create(MinioService.prototype) as MinioService & {
+    const service = Object.create(MinioService.prototype) as {
       client: FakeClient;
       bucket: string;
       logger: { log: (message: string) => void };
+      onModuleInit: () => Promise<void>;
     };
     service.client = fake;
     service.bucket = BUCKET;

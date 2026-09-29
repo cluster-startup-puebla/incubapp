@@ -66,10 +66,14 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
       provide: StartupsService,
       useValue: {
         list: async () => ({ items: [], total: 0 }),
+        listDeleted: async () => ({ items: [], total: 0 }),
         get: async () => ({}),
+        getWithDeleted: async () => ({}),
         create: async () => ({}),
         update: async () => ({}),
         remove: async () => ({}),
+        restore: async () => ({}),
+        purge: async () => undefined,
       },
     },
     {

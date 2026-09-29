@@ -403,12 +403,16 @@ export function canPerform(input: CanPerformInput): boolean {
         r === 'mentor',
     )
   ) {
-    if (
-      input.resourceOwnerId == null ||
-      input.actorId == null ||
-      input.resourceOwnerId !== input.actorId
-    ) {
-      return false;
+    // Omitted resourceOwnerId → permission matrix only; service enforces
+    // founder ownership as 404. Explicit null/string uses matrix deny.
+    if (input.resourceOwnerId !== undefined) {
+      if (
+        input.resourceOwnerId === null ||
+        input.actorId == null ||
+        input.resourceOwnerId !== input.actorId
+      ) {
+        return false;
+      }
     }
   }
 

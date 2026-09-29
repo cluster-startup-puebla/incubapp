@@ -214,6 +214,13 @@ model Incubation {
   @@map("incubation")
 }
 
+enum StartupVisibility {
+  PRIVATE
+  INCUBATOR
+  CLUSTER
+  PUBLIC
+}
+
 /// @business — tenant-scoped child of Incubator
 model Startup {
   id          String    @id @default(uuid(7)) @db.Uuid
@@ -226,12 +233,31 @@ model Startup {
   version     Int       @default(1)
 
   name        String
-  incubatorId String    @map("incubator_id") @db.Uuid
-  incubator   Incubator @relation(fields: [incubatorId], references: [id])
-  ownerUserId String?   @map("owner_user_id")
+  domain      String
+  visibility  StartupVisibility @default(INCUBATOR)
+  incubatorId String            @map("incubator_id") @db.Uuid
+  incubator   Incubator         @relation(fields: [incubatorId], references: [id])
+  ownerUserId String?           @map("owner_user_id")
+  snapshots   StartupSnapshot[]
 
   @@index([incubatorId])
+  @@index([domain])
   @@map("startup")
+}
+
+/// Minimal current-name history row (T6.6 create only; T6.7 lifecycle later).
+model StartupSnapshot {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at")
+  startupId String    @map("startup_id") @db.Uuid
+  startup   Startup   @relation(fields: [startupId], references: [id], onDelete: Cascade)
+  name      String
+  domain    String
+  validFrom DateTime  @default(now()) @map("valid_from")
+  validTo   DateTime? @map("valid_to")
+
+  @@index([startupId])
+  @@map("startup_snapshot")
 }
 
 enum GeoUnitLevel {

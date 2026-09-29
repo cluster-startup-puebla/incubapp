@@ -105,6 +105,7 @@ describe('TENANT_RESOURCES registry', () => {
           prisma.startup.create({
             data: {
               name: `Startup B ${suffix}`,
+              domain: `b-${suffix}.example`,
               incubatorId: incBId,
             },
           }),
@@ -122,6 +123,7 @@ describe('TENANT_RESOURCES registry', () => {
           prisma.startup.create({
             data: {
               name: `Startup A ${suffix}`,
+              domain: `a-${suffix}.example`,
               incubatorId: incAId,
             },
           }),
@@ -129,6 +131,9 @@ describe('TENANT_RESOURCES registry', () => {
     });
 
     afterAll(async () => {
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM startup_snapshot WHERE startup_id IN (SELECT id FROM startup WHERE incubator_id IN ('${incAId}', '${incBId}'))`,
+      );
       await prisma.$executeRawUnsafe(
         `DELETE FROM startup WHERE incubator_id IN ('${incAId}', '${incBId}')`,
       );
@@ -166,7 +171,13 @@ describe('TENANT_RESOURCES registry', () => {
               isSuperAdmin: false,
               actorId: 'idor-actor',
             },
-            async () => startups.update(startupBId, { name: 'hacked' }),
+            async () =>
+              startups.update(
+                startupBId,
+                1,
+                { name: 'hacked' },
+                { roles: ['director'] },
+              ),
           ),
         ).rejects.toBeInstanceOf(NotFoundException);
       },
@@ -183,7 +194,7 @@ describe('TENANT_RESOURCES registry', () => {
               isSuperAdmin: false,
               actorId: 'idor-actor',
             },
-            async () => startups.remove(startupBId),
+            async () => startups.remove(startupBId, { roles: ['director'] }),
           ),
         ).rejects.toBeInstanceOf(NotFoundException);
       },

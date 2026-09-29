@@ -202,8 +202,11 @@ function parseInValues(
   return parts.map((part) => parseScalar(field, type, part));
 }
 
+/** @deprecated Prefer STARTUP_FILTERS from startups/startup.dto.js */
 export const STARTUP_FILTERS: FilterWhitelist = {
   name: { type: 'string', operators: ['eq', 'in'] },
+  domain: { type: 'string', operators: ['eq', 'in'] },
+  visibility: { type: 'string', operators: ['eq', 'in'] },
   createdAt: { type: 'date', operators: ['gte', 'lte', 'gt', 'lt', 'eq'] },
   ownerUserId: { type: 'string', operators: ['eq', 'in'] },
 };

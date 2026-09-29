@@ -16,6 +16,8 @@ export type ProblemDetails = {
   instance: string;
   requestId: string;
   errors?: Array<{ path: string; message: string }>;
+  /** Extra problem members (e.g. domain-collision candidates). */
+  candidates?: unknown;
 };
 
 const PRISMA_STATUS: Record<string, number> = {
@@ -97,6 +99,16 @@ function extractErrors(
     .filter((item): item is { path: string; message: string } => item !== null);
 }
 
+function extractCandidates(response: string | object): unknown {
+  if (typeof response !== 'object' || response === null) {
+    return undefined;
+  }
+  if (!('candidates' in response)) {
+    return undefined;
+  }
+  return (response as { candidates?: unknown }).candidates;
+}
+
 function httpDetail(exception: HttpException): string {
   const response = exception.getResponse();
   if (typeof response === 'string') {
@@ -170,6 +182,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const response = exception.getResponse();
       const errors = extractErrors(response);
+      const candidates = extractCandidates(response);
       return {
         type: `https://httpstatuses.com/${status}`,
         title: STATUS_TITLES[status] ?? 'Error',
@@ -178,6 +191,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         instance,
         requestId,
         ...(errors && errors.length > 0 ? { errors } : {}),
+        ...(candidates !== undefined ? { candidates } : {}),
       };
     }
 

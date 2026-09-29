@@ -343,6 +343,14 @@ describe('permissions matrix', () => {
         resourceOwnerId: 'founder-1',
       }),
     ).toBe(true);
+    // Omitted ownership context: matrix allow; HTTP service returns 404.
+    expect(
+      canPerform({
+        roles: ['founder'],
+        permission: 'startup:update',
+        actorId: 'founder-1',
+      }),
+    ).toBe(true);
   });
 
   it('purge solo super admin', () => {

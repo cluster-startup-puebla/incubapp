@@ -175,4 +175,24 @@ describe('ProblemDetailsFilter', () => {
       errors: [{ path: 'name', message: 'Required' }],
     });
   });
+
+  it('409 domain collision incluye candidates', () => {
+    const filter = new ProblemDetailsFilter('test');
+    const ctx = createHost({});
+    filter.catch(
+      new HttpException(
+        {
+          message: 'Similar startups exist for this domain',
+          candidates: [{ id: 's1', name: 'Acme', domain: 'acme.com' }],
+        },
+        HttpStatus.CONFLICT,
+      ),
+      ctx.host,
+    );
+    expect(ctx.result.body).toMatchObject({
+      status: 409,
+      detail: 'Similar startups exist for this domain',
+      candidates: [{ id: 's1', name: 'Acme', domain: 'acme.com' }],
+    });
+  });
 });

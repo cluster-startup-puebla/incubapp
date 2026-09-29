@@ -11,7 +11,7 @@ import {
 const createStartupSchema = z
   .object({
     name: nonEmptyString,
-    ownerUserId: z.string().nullable().optional(),
+    domain: nonEmptyString,
   })
   .strict();
 
@@ -48,13 +48,19 @@ describe('ZodValidationPipe', () => {
   }
 
   it('payload valido', () => {
-    const parsed = pipe.transform({ name: 'Acme' }, bodyMeta(CreateStartupDto));
-    expect(parsed).toEqual({ name: 'Acme' });
+    const parsed = pipe.transform(
+      { name: 'Acme', domain: 'acme.com' },
+      bodyMeta(CreateStartupDto),
+    );
+    expect(parsed).toEqual({ name: 'Acme', domain: 'acme.com' });
   });
 
   it('campo extra', () => {
     expect(() =>
-      pipe.transform({ name: 'Acme', extra: 1 }, bodyMeta(CreateStartupDto)),
+      pipe.transform(
+        { name: 'Acme', domain: 'acme.com', extra: 1 },
+        bodyMeta(CreateStartupDto),
+      ),
     ).toThrow(BadRequestException);
   });
 
@@ -73,7 +79,10 @@ describe('ZodValidationPipe', () => {
 
   it('solo espacios', () => {
     expect(() =>
-      pipe.transform({ name: '   ' }, bodyMeta(CreateStartupDto)),
+      pipe.transform(
+        { name: '   ', domain: 'acme.com' },
+        bodyMeta(CreateStartupDto),
+      ),
     ).toThrow(BadRequestException);
   });
 
@@ -87,7 +96,7 @@ describe('ZodValidationPipe', () => {
     for (const field of FORBIDDEN_WRITE_FIELDS) {
       expect(() =>
         pipe.transform(
-          { name: 'Acme', [field]: 'injected' },
+          { name: 'Acme', domain: 'acme.com', [field]: 'injected' },
           bodyMeta(CreateStartupDto),
         ),
       ).toThrow(BadRequestException);

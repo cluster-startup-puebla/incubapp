@@ -87,6 +87,9 @@ describe('tenant scoping helpers', () => {
 
   afterAll(async () => {
     await prisma.$executeRawUnsafe(
+      `DELETE FROM startup_snapshot WHERE startup_id IN (SELECT id FROM startup WHERE incubator_id IN ('${incAId}', '${incBId}'))`,
+    );
+    await prisma.$executeRawUnsafe(
       `DELETE FROM startup WHERE incubator_id IN ('${incAId}', '${incBId}')`,
     );
     await prisma.$executeRawUnsafe(
@@ -107,6 +110,7 @@ describe('tenant scoping helpers', () => {
         prisma.startup.create({
           data: {
             name: `Forced ${Date.now()}`,
+            domain: `forced-${Date.now()}.example`,
             incubatorId: incBId,
           },
         }),
@@ -124,7 +128,11 @@ describe('tenant scoping helpers', () => {
       },
       async () =>
         prisma.startup.create({
-          data: { name: `Only B ${Date.now()}`, incubatorId: incBId },
+          data: {
+            name: `Only B ${Date.now()}`,
+            domain: `only-b-${Date.now()}.example`,
+            incubatorId: incBId,
+          },
         }),
     );
 

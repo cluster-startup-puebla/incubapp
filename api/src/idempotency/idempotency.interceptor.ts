@@ -112,7 +112,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
         }
 
         return next.handle().pipe(
-          switchMap((body) => {
+          switchMap((body: unknown) => {
             const statusCode = response.statusCode ?? 201;
             return from(
               this.store
