@@ -163,12 +163,27 @@ model Incubator {
 
   name          String
   slug          String
+  latitude      Float?
+  longitude     Float?
   institutionId String?      @map("institution_id") @db.Uuid
   institution   Institution? @relation(fields: [institutionId], references: [id])
   startups      Startup[]
+  incubations   Incubation[]
 
+  // Active uniqueness: slug WHERE deleted_at IS NULL — SQL migration
   @@index([institutionId])
   @@map("incubator")
+}
+
+/// Minimal incubation row for delete-guard (full cohort API is T6.10).
+model Incubation {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  incubatorId String    @map("incubator_id") @db.Uuid
+  incubator   Incubator @relation(fields: [incubatorId], references: [id])
+  status      String
+
+  @@index([incubatorId, status])
+  @@map("incubation")
 }
 
 /// @business — tenant-scoped child of Incubator

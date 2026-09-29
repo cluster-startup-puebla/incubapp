@@ -12,6 +12,8 @@ import { HealthController } from '../src/health/health.controller.js';
 import { HealthService } from '../src/health/health.service.js';
 import { GeoUnitsController } from '../src/geo-units/geo-units.controller.js';
 import { GeoUnitsService } from '../src/geo-units/geo-units.service.js';
+import { IncubatorsController } from '../src/incubators/incubators.controller.js';
+import { IncubatorsService } from '../src/incubators/incubators.service.js';
 import { InstitutionsController } from '../src/institutions/institutions.controller.js';
 import { InstitutionsService } from '../src/institutions/institutions.service.js';
 import { SessionsController } from '../src/sessions/sessions.controller.js';
@@ -28,6 +30,7 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
     StartupsController,
     InstitutionsController,
     GeoUnitsController,
+    IncubatorsController,
   ],
   providers: [
     {
@@ -87,6 +90,21 @@ import { AuditLogService } from '../src/audit/audit-log.service.js';
         remove: async () => ({}),
         restore: async () => ({}),
         purge: async () => undefined,
+      },
+    },
+    {
+      provide: IncubatorsService,
+      useValue: {
+        list: async () => ({ items: [], total: 0 }),
+        listDeleted: async () => ({ items: [], total: 0 }),
+        get: async () => ({}),
+        getWithDeleted: async () => ({}),
+        create: async () => ({}),
+        update: async () => ({}),
+        remove: async () => ({}),
+        restore: async () => ({}),
+        purge: async () => undefined,
+        mapFeatures: async () => ({ type: 'FeatureCollection', features: [] }),
       },
     },
     {

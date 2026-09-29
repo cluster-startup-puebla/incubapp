@@ -30,6 +30,16 @@ export const GLOBAL_RESOURCES = [
     /** Without permission → 403; geo is global (no incubator scoping). */
     idor: 'permission' as const,
   },
+  {
+    model: 'Incubator' as const,
+    basePath: '/api/v1/incubators',
+    methods: ['GET', 'PATCH', 'DELETE'] as const,
+    /**
+     * Tenant root: not in TENANT_MODELS. Cross-scope access for directors
+     * is enforced in the service via membership scopeId → 404.
+     */
+    idor: 'scope' as const,
+  },
 ] as const;
 
 export type TenantResource = (typeof TENANT_RESOURCES)[number];

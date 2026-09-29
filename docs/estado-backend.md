@@ -6,7 +6,24 @@ Actualizado: 2026-09-29
 
 ## Dónde quedamos
 
-Etapa activa: **T6.1 geo-units cerrado en este checkpoint**. Siguiente: T6.3 `incubators`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+Etapa activa: **T6.3 incubators cerrado en este checkpoint**. Siguiente: T6.4 users/memberships. Checkpoint geo-units: `6727035`. Checkpoint institutions: `73a0e34`. Checkpoint T4: `a81ca55`. Checkpoint T3: `ee05768`. Checkpoint T2: `29d96e9`. Checkpoint T1: `1713908`. Checkpoint T0: `653ee3b`.
+
+## Hecho en T6.3 (`incubators`)
+
+| Pieza | Estado | Notas |
+|-------|--------|-------|
+| Soft delete | hecho | `Incubator` ya en `SOFT_DELETE_MODELS` + `check-no-prisma-unique`; sin `@@unique` |
+| Unique parcial | hecho | `slug WHERE deleted_at IS NULL` (desde T3); recreate tras soft-delete → 201 |
+| Lat/lng | hecho | `latitude`/`longitude` opcionales; Zod -90..90 / -180..180; lat 120 → 400 |
+| CRUD + map | hecho | list/get/create/update/delete/restore/trash/purge + `GET /map` GeoJSON FeatureCollection |
+| Delete guard | hecho | tabla mínima `incubation` (id, incubatorId, status); delete con `active` → 409 |
+| Scope IDOR | hecho | director edita su `scopeId` → 200; otra incubadora → **404** (no 403); no en `TENANT_MODELS` |
+| Permisos | hecho | recurso `incubator` en matriz; purge solo super admin; sin `@RequiresTenant()` |
+| Envelope / audit / If-Match | hecho | estilo institutions; mapa sin envelope (FeatureCollection crudo) |
+
+Migración: `20260929074238_incubator_lat_lng_incubation` (`latitude`/`longitude` + `incubation`).
+
+Verificación del padre: **289** tests, lint 0 errores, `openapi:check` (24 paths, incluye incubators) y `db:check-uniques` ok. En vivo: lat 120 → 400, create 201, mapa `FeatureCollection`.
 
 ## Hecho en T6.1 (`geo-units`)
 
@@ -97,7 +114,7 @@ Verificación del padre: **87** tests, lint 0 errores. En vivo: `GET /api/v1/hea
 
 ## Siguiente
 
-T6.3 `incubators`. No implementar T3.6 ni T2.8.
+T6.4 `users` / `memberships`. No implementar T3.6 ni T2.8.
 
 Formato de commit: `[:emoji:] backend - add - descripción corta`
 
@@ -126,12 +143,12 @@ Commit `653ee3b`. Health `GET /api/v1/health`, readiness con Postgres y Redis, t
 
 ## Fuera del corte (no implementar)
 
-T2.8, T3.6 hasta decidir, T4.9–T4.10, T4.13, T4.15, T6.3–T6.18 (salvo T6.2), T7.2, T7.4, T8.
+T2.8, T3.6 hasta decidir, T4.9–T4.10, T4.13, T4.15, T6.4–T6.18, T7.2, T7.4, T8.
 
 ## Cómo retomar
 
 1. Leer este archivo.
-2. Copiar la receta de `institutions` / `geo-units` al siguiente recurso (T6.3 / T6.4).
+2. Copiar la receta de `institutions` / `incubators` al siguiente recurso (T6.4).
 3. No correr `nest new`. No mover `/api/auth` ni `GET /api/v1/health`.
 4. No commitear `.env`.
 5. `createdById` sigue siendo `String` (id de Better Auth), no UUID.

@@ -14,6 +14,7 @@ import { WriteRateLimitModule } from './common/throttle/write-rate-limit.module.
 import { WriteRateLimitGuard } from './common/throttle/write-rate-limit.guard.js';
 import { HealthModule } from './health/health.module.js';
 import { GeoUnitsModule } from './geo-units/geo-units.module.js';
+import { IncubatorsModule } from './incubators/incubators.module.js';
 import { InstitutionsModule } from './institutions/institutions.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { MembershipModule } from './membership/membership.module.js';
@@ -44,6 +45,7 @@ import { TenantContextGuard } from './tenant/tenant-context.guard.js';
     SessionsModule,
     StartupsModule,
     InstitutionsModule,
+    IncubatorsModule,
     GeoUnitsModule,
   ],
   providers: [

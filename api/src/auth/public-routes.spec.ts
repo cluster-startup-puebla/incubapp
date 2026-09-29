@@ -8,6 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard, AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import { GeoUnitsController } from '../geo-units/geo-units.controller.js';
 import { HealthController } from '../health/health.controller.js';
+import { IncubatorsController } from '../incubators/incubators.controller.js';
 import { InstitutionsController } from '../institutions/institutions.controller.js';
 import { SessionsController } from '../sessions/sessions.controller.js';
 import { StartupsController } from '../startups/startups.controller.js';
@@ -46,6 +47,11 @@ const CONTROLLER_INVENTORY: Array<{
   {
     name: 'InstitutionsController',
     type: InstitutionsController,
+    anonymous: false,
+  },
+  {
+    name: 'IncubatorsController',
+    type: IncubatorsController,
     anonymous: false,
   },
   {

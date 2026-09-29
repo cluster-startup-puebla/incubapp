@@ -43,6 +43,10 @@ const hasDatabase = Boolean(process.env.DATABASE_URL);
       create: (args: unknown) => Promise<{ id: string }>;
       delete: (args: unknown) => Promise<unknown>;
     };
+    incubator: {
+      create: (args: unknown) => Promise<{ id: string }>;
+      delete: (args: unknown) => Promise<unknown>;
+    };
     $executeRawUnsafe: (sql: string) => Promise<unknown>;
     $disconnect: () => Promise<void>;
   };
@@ -93,6 +97,25 @@ const hasDatabase = Boolean(process.env.DATABASE_URL);
 
     await prisma.$executeRawUnsafe(
       `DELETE FROM geo_unit WHERE code = '${code.replace(/'/g, "''")}'`,
+    );
+  });
+
+  it('recrear incubator slug tras soft delete', async () => {
+    const suffix = `${Date.now()}`;
+    const slug = `pu-inc-${suffix}`;
+
+    const first = await prisma.incubator.create({
+      data: { name: `Inc ${suffix}`, slug },
+    });
+    await prisma.incubator.delete({ where: { id: first.id } });
+
+    const second = await prisma.incubator.create({
+      data: { name: `Inc 2 ${suffix}`, slug },
+    });
+    expect(second.id).not.toBe(first.id);
+
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM incubator WHERE slug = '${slug.replace(/'/g, "''")}'`,
     );
   });
 

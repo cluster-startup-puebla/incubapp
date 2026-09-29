@@ -43,6 +43,14 @@ describe('TENANT_RESOURCES registry', () => {
     expect(geoUnit?.idor).toBe('permission');
     expect(HTTP_RESOURCES.some((r) => r.model === 'GeoUnit')).toBe(true);
   });
+
+  it('incubator es scope-based (no TENANT_MODEL)', () => {
+    expect(TENANT_MODELS).not.toContain('Incubator');
+    const incubator = GLOBAL_RESOURCES.find((r) => r.model === 'Incubator');
+    expect(incubator).toBeDefined();
+    expect(incubator?.idor).toBe('scope');
+    expect(HTTP_RESOURCES.some((r) => r.model === 'Incubator')).toBe(true);
+  });
 });
 
 (hasDatabase ? describe : describe.skip)(

@@ -24,6 +24,56 @@ const GEO_UNIT_READ_ONLY = {
   'geo-unit:purge': false,
 } as const;
 
+const INCUBATOR_CLUSTER_ADMIN = {
+  'incubator:list': true,
+  'incubator:read': true,
+  'incubator:create': true,
+  'incubator:update': true,
+  'incubator:delete': true,
+  'incubator:restore': true,
+  'incubator:purge': false,
+} as const;
+
+const INCUBATOR_COORGANIZER = {
+  'incubator:list': true,
+  'incubator:read': true,
+  'incubator:create': true,
+  'incubator:update': true,
+  'incubator:delete': true,
+  'incubator:restore': true,
+  'incubator:purge': false,
+} as const;
+
+const INCUBATOR_DIRECTOR = {
+  'incubator:list': true,
+  'incubator:read': true,
+  'incubator:create': false,
+  'incubator:update': true,
+  'incubator:delete': true,
+  'incubator:restore': false,
+  'incubator:purge': false,
+} as const;
+
+const INCUBATOR_STAFF = {
+  'incubator:list': true,
+  'incubator:read': true,
+  'incubator:create': false,
+  'incubator:update': true,
+  'incubator:delete': false,
+  'incubator:restore': false,
+  'incubator:purge': false,
+} as const;
+
+const INCUBATOR_READ_ONLY = {
+  'incubator:list': true,
+  'incubator:read': true,
+  'incubator:create': false,
+  'incubator:update': false,
+  'incubator:delete': false,
+  'incubator:restore': false,
+  'incubator:purge': false,
+} as const;
+
 /**
  * Documented expected matrix: every role × resource:action cell must appear.
  * Adding a role/action without an entry here fails `matriz completa`.
@@ -44,6 +94,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:delete': true,
     'institution:restore': true,
     'institution:purge': false,
+    ...INCUBATOR_CLUSTER_ADMIN,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
@@ -68,6 +119,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:delete': false,
     'institution:restore': false,
     'institution:purge': false,
+    ...INCUBATOR_COORGANIZER,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
@@ -92,6 +144,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:delete': false,
     'institution:restore': false,
     'institution:purge': false,
+    ...INCUBATOR_DIRECTOR,
     'membership:list': true,
     'membership:read': true,
     'membership:create': true,
@@ -116,6 +169,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:delete': false,
     'institution:restore': false,
     'institution:purge': false,
+    ...INCUBATOR_STAFF,
     'membership:list': true,
     'membership:read': true,
     'membership:create': false,
@@ -140,6 +194,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:delete': false,
     'institution:restore': false,
     'institution:purge': false,
+    ...INCUBATOR_READ_ONLY,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
@@ -164,6 +219,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:delete': false,
     'institution:restore': false,
     'institution:purge': false,
+    ...INCUBATOR_READ_ONLY,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
@@ -188,6 +244,7 @@ const EXPECTED_MATRIX: Record<Role, Record<Permission, boolean>> = {
     'institution:delete': false,
     'institution:restore': false,
     'institution:purge': false,
+    ...INCUBATOR_READ_ONLY,
     'membership:list': false,
     'membership:read': false,
     'membership:create': false,
@@ -272,6 +329,14 @@ describe('permissions matrix', () => {
         permission: 'geo-unit:create',
         isSuperAdmin: true,
       }),
+    ).toBe(true);
+  });
+
+  it('director update incubator', () => {
+    expect(roleHasPermission('director', 'incubator:update')).toBe(true);
+    expect(roleHasPermission('director', 'incubator:create')).toBe(false);
+    expect(
+      canPerform({ roles: ['director'], permission: 'incubator:update' }),
     ).toBe(true);
   });
 
