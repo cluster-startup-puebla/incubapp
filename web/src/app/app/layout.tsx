@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import { PortalNav } from '@/components/resource/portal-nav';
 import { apiClient } from '@/lib/api/client';
 import { authClient } from '@/lib/auth-client';
@@ -13,11 +14,14 @@ import { rolesFromSession, type SessionUser } from './session-roles';
 export default function AppPortalLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
+  const sentToLogin = useRef(false);
 
   useEffect(() => {
-    if (!isPending && !session) {
-      router.replace('/login');
+    if (isPending || session || sentToLogin.current) {
+      return;
     }
+    sentToLogin.current = true;
+    router.replace('/login');
   }, [isPending, session, router]);
 
   if (isPending) {
@@ -28,20 +32,25 @@ export default function AppPortalLayout({ children }: { children: ReactNode }) {
     return <Link href="/login">Ir a login</Link>;
   }
 
-  const role = rolesFromSession(session.user as SessionUser | undefined);
+  const user = session.user as SessionUser & { email?: string };
+  const role = rolesFromSession(user);
 
   return (
     <PortalBrandProvider>
-      <PortalShell role={role}>{children}</PortalShell>
+      <PortalShell role={role} email={user.email ?? ''}>
+        {children}
+      </PortalShell>
     </PortalBrandProvider>
   );
 }
 
 function PortalShell({
   role,
+  email,
   children,
 }: {
   role: string[];
+  email: string;
   children: ReactNode;
 }) {
   const brand = usePortalBrand();
@@ -83,8 +92,25 @@ function PortalShell({
 
   return (
     <TenantTheme slug={brand?.slug ?? null} revision={brand?.revision ?? 0}>
-      <PortalNav role={role} />
-      {children}
+      <div className="flex min-h-screen">
+        <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-muted/40 p-4">
+          <p className="mb-4 px-3 text-sm font-semibold">Incubapp</p>
+          <PortalNav role={role} />
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex items-center justify-end gap-3 border-b border-border px-6 py-3">
+            <span className="text-sm text-muted-foreground">{email}</span>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void authClient.signOut()}
+            >
+              Salir
+            </Button>
+          </header>
+          <div className="flex-1 p-6">{children}</div>
+        </div>
+      </div>
     </TenantTheme>
   );
 }

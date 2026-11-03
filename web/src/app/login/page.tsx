@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { authClient } from '@/lib/auth-client';
+import { portalPath, type SessionUser } from '@/app/app/session-roles';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,9 +19,9 @@ export default function LoginPage() {
     setPending(true);
     setError(null);
     const form = new FormData(event.currentTarget);
-    const { error: signInError } = await authClient.signIn.email({
-      email: String(form.get('email')),
-      password: String(form.get('password')),
+    const { data, error: signInError } = await authClient.signIn.email({
+      email: String(form.get('email') ?? '').trim(),
+      password: String(form.get('password') ?? '').trim(),
     });
     setPending(false);
 
@@ -29,12 +30,12 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/');
+    router.push(portalPath(data?.user as SessionUser | undefined));
     router.refresh();
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid max-w-sm gap-3">
+    <form method="post" onSubmit={onSubmit} className="grid max-w-sm gap-3">
       <h1 className="text-xl font-semibold">Entrar</h1>
       <div className="grid gap-1.5">
         <Label htmlFor="email">Email</Label>

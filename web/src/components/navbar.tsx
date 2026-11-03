@@ -1,10 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 
 export function Navbar() {
+  const pathname = usePathname();
   const { data: session, isPending } = authClient.useSession();
+
+  if (pathname.startsWith('/app')) {
+    return null;
+  }
 
   return (
     <nav>
